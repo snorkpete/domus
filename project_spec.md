@@ -34,7 +34,7 @@ Every room follows a standard contract: defined inputs, defined outputs. Work fl
 
 | Room | Input | Output | Staff |
 |------|-------|--------|-------|
-| **Study** | Vague ideas | Product specs | Oracle |
+| **Study** | Vague ideas (human-led) | Product specs | Oracle (with human) |
 | **Observatory** | Telemetry data | Ideas or bug reports | Stargazer |
 | **Office** | Product specs | Work tickets | Quartermaster |
 | **Workshop** | Work tickets | Merge requests (MRs) | Workers, Scribes |
@@ -56,7 +56,7 @@ Every room follows a standard contract: defined inputs, defined outputs. Work fl
 
 | Role | Room | Responsibility |
 |------|------|----------------|
-| **Oracle** | Study | Draws out vague ideas through conversation and produces concrete product specs |
+| **Oracle** | Study | Works with the human through conversation to draw out vague ideas and co-produce concrete product specs. This is a collaborative process — the Oracle guides, but the human is essential. |
 | **Stargazer** | Observatory | Analyses telemetry and error data; identifies bugs and potential feature opportunities |
 | **Quartermaster** | Office | Takes product specs and decomposes them into implementable work tickets |
 | **Workers** | Workshop | Implement tickets; produce MRs. Plural — many workers can operate in parallel |
@@ -76,6 +76,61 @@ Every room follows a standard contract: defined inputs, defined outputs. Work fl
 | **Butler** | Primary human interface. Entry point for most interactions — when you broadly know what you want. Can scope to a specific project or operate across all of them. |
 | **Herald** | Manages the human feedback loop. Compiles the morning briefing on `domus connect`. Sends push notifications (email, WhatsApp) for urgent items. Escalates blockers. |
 | **Chamberlain** | System configuration and maintenance. Updates config files on behalf of the user (via Butler), commits changes to git. |
+
+---
+
+## The Oracle
+
+The Oracle is the entry point for ideation — the character you talk to in the Study when you have something vague and need to think it through. The Oracle's job is not to solve the problem but to help the human understand what problem they are actually trying to solve.
+
+### Oracle Behaviour
+
+- **Ask, don't prescribe** — the Oracle leads with questions, not suggestions. It resists jumping to solutions or implementation ideas.
+- **Separate what from how** — the Oracle keeps the conversation focused on the problem space and desired outcome, not implementation details. When implementation details arise, they are treated as conceptual scaffolding to clarify the idea, not as decisions.
+- **Keep the human talking** — ideas solidify through conversation. The Oracle's job is to draw out what the human already knows but hasn't articulated yet.
+- **Don't rush to output** — a session ends when the idea is genuinely clear, not when it seems clear enough.
+- **Produce structured output** — when the session concludes, the Oracle produces a product spec that captures the what and why, not the how.
+
+### Oracle Output Format (Product Spec)
+
+A product spec produced by the Study should contain:
+
+- **Problem statement** — what problem is being solved and for whom
+- **Desired outcome** — what success looks like, without prescribing implementation
+- **Constraints** — known boundaries (technical, product, user experience)
+- **Open questions** — anything unresolved that the Quartermaster or human will need to address before work can begin
+
+### Note
+
+The Oracle is always a collaboration. A product spec is never Oracle output alone — it is the result of human + Oracle working together. The Oracle guides; the human provides the raw material.
+
+---
+
+## Worker Context Assembly
+
+A Worker is only as good as the context it receives. Domus is responsible for assembling a complete context package before any Worker session begins. The Worker itself can be simple — intelligence lives in the assembly, not the execution.
+
+### Context Package
+
+Before a Worker starts a task, Domus assembles:
+
+- **Task spec** — the specific ticket: what to build, acceptance criteria, any known constraints
+- **Project `claude.md`** — coding conventions, preferences, how Claude should behave in this project
+- **Project `domus.md`** — project-specific Domus config: autonomy tier, project overview, relevant staff instructions
+- **Codebase context** — the relevant parts of the codebase the Worker will need to read or modify
+- **Prior decisions** — any architectural decisions or specs that affect this task
+
+### Worker Execution
+
+Workers run in non-interactive mode. They receive their context package, execute against it, and produce output (an MR). They do not ask questions mid-task — if a task is ambiguous, that is a failure of context assembly, not a Worker failure.
+
+### Diagnosing Worker Failures
+
+Unreliable Workers are almost always a context problem. When a Worker produces bad output:
+
+1. **First suspect** — incomplete or incorrect context assembly
+2. **Second suspect** — task spec too vague; needs Quartermaster refinement before resubmitting
+3. **Last resort** — Worker configuration itself needs adjustment
 
 ---
 
@@ -101,7 +156,7 @@ Two modes:
 
 ### Entry Points
 - **Butler** — primary entry for most tasks. Talk to the Butler when you know what you want, even if the details are light.
-- **Oracle** — entry point for ideation. Talk to the Oracle when you have a vague idea and need to think it through. The Oracle works in the Study.
+- **Oracle** — entry point for ideation. Talk to the Oracle when you have a vague idea and need to think it through. The Oracle works in the Study. Output (product specs) is always the result of human + Oracle collaboration — not the Oracle alone.
 
 ---
 
@@ -144,7 +199,7 @@ Domus can close the feedback loop between a system in production and the work qu
 1. **Tracking SDK** (companion tool, project-level) — instruments any application. Captures usage events and error logs. Likely built on OpenTelemetry / GA-style tooling.
 2. **Stargazer** (Observatory) — analyses incoming telemetry. Produces:
    - Concrete bug reports → Mailroom → Office (become tickets)
-   - Vague feature signals → Mailroom → Study (Oracle refines into specs)
+   - Vague feature signals → Mailroom → Study (Oracle + human refine into specs)
 3. Output flows through the normal Domus pipeline → Workers → MRs → Gatehouse → merged code → back to production
 
 The result: a system that observes its own behaviour in production and generates its own improvement work.
