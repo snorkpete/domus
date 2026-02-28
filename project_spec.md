@@ -296,6 +296,17 @@ The result: a system that observes its own behaviour in production and generates
 
 ---
 
+## Development Principles
+
+### Testing
+
+- **TDD approach** — Workers write tests first, then implementation. This applies to Domus itself and to any project Domus manages.
+- **Coverage as a priority** — cover as much as is practical. Tests serve two purposes: regression prevention and documentation. A well-tested codebase is self-describing — the tests show how the system is expected to behave.
+- **Code health enables automation** — the more reliable the codebase, the more confidently Workers can operate autonomously. Flaky or untested code undermines the entire automation model.
+- **Tests are part of the output** — an MR from a Worker that adds functionality without tests is incomplete. The Gatekeeper should reject it.
+
+---
+
 ## Technology Stack
 
 - **Language**: TypeScript
