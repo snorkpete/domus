@@ -16,6 +16,10 @@ LLM (Claude)
 
 Domus does not re-implement what Claude Code handles. As Claude Code's native capabilities improve, Domus should defer to them — no custom code for things Claude can handle itself. Domus fills the gaps: persistence and coordination.
 
+### The Domus Principle
+
+Prefer Claude and agent features over custom code. Write the minimum code necessary, and write it so it can be replaced. Claude's capabilities will grow — pieces of Domus that exist today to fill gaps will become unnecessary as those gaps close. The codebase should be light and malleable enough that any component can be ripped out and replaced with native Claude functionality as it becomes available. Custom code for its own sake is a liability, not an asset.
+
 ---
 
 ## The House Metaphor
@@ -106,6 +110,22 @@ The Oracle is always a collaboration. A product spec is never Oracle output alon
 
 ---
 
+## The Quartermaster
+
+The Quartermaster takes product specs and decomposes them into implementable work tickets. This is primarily a translation role — from human intent to machine-executable tasks.
+
+### Quartermaster Behaviour
+
+- **Recognise decisions vs. exploration** — the Quartermaster distinguishes between things that are decided (human confirms and moves on) and things still being explored (qualified language, open questions). Only decided things are captured as spec updates or tickets.
+- **Update the spec automatically** — when a decision is made, the Quartermaster updates `project_spec.md` without prompting. No permission needed for bookkeeping.
+- **Signals that something is decided**: human says "yes", "sounds good", "go with X", stops questioning and moves on.
+- **Signals that something is still exploratory**: words like "maybe", "might", "what if", "what do you think".
+- **Don't ask about bookkeeping** — spec updates, ticket creation, and decision logging are done automatically.
+- **Own the design-to-ticket transition** — the Quartermaster senses when enough has been designed to begin ticketing and names that moment explicitly, rather than waiting for the human to call it. Let design breathe, but don't let it run indefinitely.
+- **Edit, don't rewrite** — when updating living documents like the project spec, make targeted edits. Full rewrites are lossy and risk dropping context that wasn't meant to be removed.
+
+---
+
 ## Worker Context Assembly
 
 A Worker is only as good as the context it receives. Domus is responsible for assembling a complete context package before any Worker session begins. The Worker itself can be simple — intelligence lives in the assembly, not the execution.
@@ -122,7 +142,13 @@ Before a Worker starts a task, Domus assembles:
 
 ### Worker Execution
 
-Workers run in non-interactive mode. They receive their context package, execute against it, and produce output (an MR). They do not ask questions mid-task — if a task is ambiguous, that is a failure of context assembly, not a Worker failure.
+Workers run Claude Code in non-interactive mode. They receive their context package, execute against it, and produce output (an MR). They do not ask questions mid-task — if a task is ambiguous, that is a failure of context assembly, not a Worker failure.
+
+Workers use **git worktrees** for isolation. Each Worker gets its own worktree under `workspace/worktrees/<project>/`, separate from the main project repo checkout.
+
+### Claude Code Permissions
+
+Workers must not be blocked mid-task by permission prompts. Domus pre-configures Claude Code permissions as part of context assembly — appropriate tool allowances are set before the Worker session begins. The permission profile is derived from the task type and project `domus.md`. A Worker that gets stuck on a permission prompt is a context assembly failure.
 
 ### Diagnosing Worker Failures
 
@@ -138,25 +164,41 @@ Unreliable Workers are almost always a context problem. When a Worker produces b
 
 ### Connecting
 ```
-domus connect
+domus work
 ```
-Domus runs as a persistent background daemon — it is always on. `domus connect` does not start Domus; it connects you to the running system and presents a briefing: what was completed, what needs your attention, what is blocked.
+Also available as `domus connect` (alias — same command). `domus` with no arguments is also an alias.
+
+Domus runs as a persistent background daemon — it is always on. `domus work` connects you to the running system and drops you into an interactive Butler session. Over time this gains additional behaviour: the Herald compiles a morning briefing (what was completed, what needs your attention, what is blocked) presented at the start of each session.
+
+### Ideation Entry Point
+```
+domus idea
+```
+Drops the user into an interactive Oracle session with the Oracle persona pre-configured. Output is a product spec written to `store/<project>/specs/`.
+
+### Initialising the Workspace
+```
+domus init
+```
+Works like `git init` — run it from inside a directory to designate it as the Domus workspace. Creates the folder structure. The workspace path is wherever you ran `domus init`.
+
+### Adding Projects
+```
+domus add project <git-url>    # clones into workspace/projects/
+domus add project <local-path> # registers an existing repo at its current location
+```
+Projects do not have to live inside the workspace. Domus records the filesystem path in `projects.md` and works with the repo wherever it lives. If a project is registered at an external path and later needs to move into the workspace, `domus move project <name>` handles that.
 
 ### Controlling Workers
 ```
 domus workers pause
 domus workers continue
 ```
-Workers can run autonomously while you are away (cost-configurable). These commands pause or resume worker execution without stopping the daemon.
+Deferred to a later version. Relevant once a task backlog and daemon exist.
 
 ### Notifications
-Two modes:
-- **Pull** — morning briefing on `domus connect`, compiled by the Herald
-- **Push** — Herald sends urgent notifications (email, WhatsApp) when something cannot wait
 
-### Entry Points
-- **Butler** — primary entry for most tasks. Talk to the Butler when you know what you want, even if the details are light.
-- **Oracle** — entry point for ideation. Talk to the Oracle when you have a vague idea and need to think it through. The Oracle works in the Study. Output (product specs) is always the result of human + Oracle collaboration — not the Oracle alone.
+In v0.1, notifications are pull-based: Butler checks a worker status file at the start of each response and reports completed MRs. Push notifications (Herald via email/WhatsApp) are a later addition.
 
 ---
 
@@ -164,17 +206,66 @@ Two modes:
 
 ### Principles
 - **Git + markdown as primary storage** — human-readable, cloneable, diffable. The same philosophy as `claude.md`.
-- **SQLite as query cache only** — rebuilt from source files on `domus init`. Never the source of truth.
-- All configuration and state that matters can be recovered by cloning the repo and running `domus init`.
+- **SQLite as query cache only** — if query performance on markdown files ever becomes a bottleneck, SQLite is added as a cache layer, rebuilt from source on `domus init`. It is never the source of truth.
+- All configuration and state that matters can be recovered by cloning the workspace repo and running `domus init`.
+
+### Workspace Structure
+
+```
+<workspace>/                    ← wherever you ran `domus init`
+  projects/                     ← repos cloned by Domus (gitignored by workspace)
+    domus/
+    <other-projects>/
+  worktrees/                    ← git worktrees for Worker isolation (gitignored)
+    domus/
+      feat-some-feature/
+    everycent/                  ← external project worktrees still land here
+      fix-some-bug/
+  store/                        ← human-readable data (tracked by workspace git)
+    global/                     ← cross-project data
+      ideas/                    ← raw ideas not yet through the Study
+      tasks/
+      decisions/
+    domus/                      ← per-project data
+      ideas/                    ← raw ideas (pre-Oracle inbox)
+      tasks/
+      specs/
+      decisions/
+    everycent/
+      ideas/
+      tasks/
+      specs/
+      decisions/
+  .domus/                       ← internal state (gitignored)
+    workers/                    ← worker status files
+    logs/                       ← session and worker logs
+  projects.md                   ← project registry (tracked)
+  .gitignore                    ← ignores projects/, worktrees/, .domus/
+```
+
+### Two-Tier Storage
+
+The workspace has two stores, mirroring the `claude.md` / `.claude/memory/` pattern:
+
+- **Human store** (`store/`) — markdown meant to be read and browsed. Tasks, specs, decisions, project registry. Tracked by git.
+- **Internal store** (`.domus/`) — technical state Domus needs. Worker status, process tracking, logs. Not tracked by git.
 
 ### Configuration Files
-- **`domus.md`** — static config at the Domus level. Defines system-wide behaviour, autonomy settings, staff preferences. Think `claude.md` for Domus itself.
+- **`domus.md`** — static config at the Domus level. Defines system-wide behaviour, autonomy settings, staff preferences.
 - **`domus.md` (project-level)** — per-project config. What Domus needs to know about a specific project that cannot be inferred from the code.
 - **`claude.md` / `agents.md`** — project-level conventions for Claude Code (unchanged, works as-is).
 
 ### Projects
-- **Project = git repo**. Domus manages all repos on the machine.
-- Projects are isolated by default. Cross-project work is handled by **Domus-level workers** — same worker model, but with access to all repos simultaneously.
+- **Project = git repo**. Projects can live anywhere on the filesystem — Domus is not a walled garden.
+- Domus records each project's filesystem path in `projects.md`.
+- Cross-project work is handled by **Domus-level workers** — same worker model, but with access to all repos simultaneously.
+
+### Git Hygiene
+- The workspace root is its own git repo, tracking `store/` and `projects.md`.
+- `projects/` is gitignored — each cloned repo is its own git repo and must not be nested under the workspace repo's tracking.
+- `worktrees/` is gitignored — worktrees reference parent repos' git objects; the workspace repo must not interfere.
+- `.domus/` is gitignored — internal/transient state.
+- External project repos (registered via local path) are entirely independent — Domus touches them only through their worktrees.
 
 ---
 
@@ -214,7 +305,61 @@ The result: a system that observes its own behaviour in production and generates
 
 ---
 
+## Development Principles
+
+### Living Documents
+
+Most interactive roles (Quartermaster, Scribes, Archivist, Chamberlain) that touch shared documents like specs, decisions, or config files should **edit, not rewrite**. A full rewrite is lossy by default — it risks dropping context that wasn't meant to be removed. Targeted edits preserve history and intent. The Oracle may be an exception to this, since its output is generative rather than maintaining an existing document.
+
+### Testing
+
+- **TDD approach** — Workers write tests first, then implementation. This applies to Domus itself and to any project Domus manages.
+- **Coverage as a priority** — cover as much as is practical. Tests serve two purposes: regression prevention and documentation. A well-tested codebase is self-describing — the tests show how the system is expected to behave.
+- **Code health enables automation** — the more reliable the codebase, the more confidently Workers can operate autonomously. Flaky or untested code undermines the entire automation model.
+- **Tests are part of the output** — an MR from a Worker that adds functionality without tests is incomplete. The Gatekeeper should reject it.
+
+---
+
+## Technology Stack
+
+- **Language**: TypeScript
+- **Runtime**: Bun (fast Node alternative; built-in package manager, test runner, bundler)
+- **Storage**: Git + markdown (workspace), per the principles above
+- **Session interface**: Domus launches Claude Code (`claude` CLI) with pre-configured personas — it does not implement its own LLM conversation loop
+
+---
+
+## V0.1 Scope
+
+V0.1 is the minimal working loop: human → Butler → Workers → MRs → human review.
+
+**In scope:**
+- `domus init` — designates a directory as the Domus workspace, creates folder structure
+- `domus work` / `domus connect` / `domus` — interactive Butler session (Claude Code + Butler persona)
+- `domus idea` — interactive Oracle session (Claude Code + Oracle persona)
+- `domus add project <git-url>` — clone into workspace and register
+- `domus add project <local-path>` — register existing repo at its current location
+- Background Workers dispatched by Butler (Claude Code, non-interactive, git worktrees)
+- Pull-based Worker notifications — Butler checks worker status at the start of each response
+- Pre-configured Claude Code permissions for Workers
+- Workspace store: human-readable markdown for tasks, specs, decisions
+- Two managed projects: Domus itself (dogfooding) and EveryCent
+
+**Deferred:**
+- Daemon / persistent background process
+- Herald push notifications (email, WhatsApp)
+- `domus workers pause / continue`
+- Mailroom routing, Foreman
+- Observatory / Stargazer
+- Infirmary / Doctor
+- Formal Gatekeeper (human reviews MRs manually in v0.1)
+- `domus move project`
+- SQLite query cache
+
+---
+
 ## What Domus Is Not Responsible For
 
 - **Deployment** — merge to main triggering a deploy is a solved problem. Domus does not touch it.
 - **Re-implementing Claude Code** — if Claude Code handles it natively, Domus defers.
+- **LLM conversation loops** — Domus launches Claude Code with context; Claude Code handles the session.
