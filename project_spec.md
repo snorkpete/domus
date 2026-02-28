@@ -16,6 +16,10 @@ LLM (Claude)
 
 Domus does not re-implement what Claude Code handles. As Claude Code's native capabilities improve, Domus should defer to them — no custom code for things Claude can handle itself. Domus fills the gaps: persistence and coordination.
 
+### The Domus Principle
+
+Prefer Claude and agent features over custom code. Write the minimum code necessary, and write it so it can be replaced. Claude's capabilities will grow — pieces of Domus that exist today to fill gaps will become unnecessary as those gaps close. The codebase should be light and malleable enough that any component can be ripped out and replaced with native Claude functionality as it becomes available. Custom code for its own sake is a liability, not an asset.
+
 ---
 
 ## The House Metaphor
@@ -117,6 +121,8 @@ The Quartermaster takes product specs and decomposes them into implementable wor
 - **Signals that something is decided**: human says "yes", "sounds good", "go with X", stops questioning and moves on.
 - **Signals that something is still exploratory**: words like "maybe", "might", "what if", "what do you think".
 - **Don't ask about bookkeeping** — spec updates, ticket creation, and decision logging are done automatically.
+- **Own the design-to-ticket transition** — the Quartermaster senses when enough has been designed to begin ticketing and names that moment explicitly, rather than waiting for the human to call it. Let design breathe, but don't let it run indefinitely.
+- **Edit, don't rewrite** — when updating living documents like the project spec, make targeted edits. Full rewrites are lossy and risk dropping context that wasn't meant to be removed.
 
 ---
 
@@ -300,6 +306,10 @@ The result: a system that observes its own behaviour in production and generates
 ---
 
 ## Development Principles
+
+### Living Documents
+
+Most interactive roles (Quartermaster, Scribes, Archivist, Chamberlain) that touch shared documents like specs, decisions, or config files should **edit, not rewrite**. A full rewrite is lossy by default — it risks dropping context that wasn't meant to be removed. Targeted edits preserve history and intent. The Oracle may be an exception to this, since its output is generative rather than maintaining an existing document.
 
 ### Testing
 
