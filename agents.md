@@ -30,12 +30,19 @@ src/
   personas/       ← system prompt builders for Butler, Oracle, etc.
 ```
 
+## Worker autonomy
+
+Workers operate autonomously — they must not pause mid-task for permission prompts. `.claude/settings.json` pre-approves the standard tool set (git, bun, file operations). Workers should proceed without requesting additional permissions for any command within that set.
+
+If a task genuinely requires a tool outside the pre-approved set, note it in `WORKER_NOTES.md` at the repo root rather than prompting — the Foreman or human will handle it on the next pass.
+
 ## Conventions
 
 - `src/cli.ts` is a router — it parses the top-level command and delegates. Implementations belong in `src/commands/`, not in `src/cli.ts`.
 - Tests are co-located with source files (`*.test.ts`) and written first (TDD).
 - Prefer Bun's native APIs (`Bun.file`, `Bun.spawn`, `Bun.spawnSync`) over adding packages.
 - Targeted file edits over full rewrites — preserve context, don't regenerate.
+- Aim for a single commit per ticket. If changes naturally require multiple commits, that is a signal the ticket may be too large — note it in `WORKER_NOTES.md`.
 
 ## Architectural decisions
 

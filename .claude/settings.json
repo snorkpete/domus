@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git:*)",
+      "Bash(bun:*)",
+      "Bash(bun run:*)",
+      "Bash(bun test:*)",
+      "Bash(bun install:*)",
+      "Bash(bunx:*)",
+      "Bash(mkdir:*)",
+      "Bash(touch:*)",
+      "Bash(rm:*)"
+    ]
+  }
+}
