@@ -1,5 +1,6 @@
 import { version } from "../package.json";
 import { runAdd } from "./commands/add.ts";
+import { runIdea } from "./commands/idea.ts";
 import { runInit } from "./commands/init.ts";
 import { runWork } from "./commands/work.ts";
 
@@ -42,8 +43,7 @@ async function main() {
       break;
 
     case "idea":
-      console.error("Oracle session not yet implemented.");
-      process.exit(1);
+      await runIdea();
       break;
 
     case "init":
