@@ -30,6 +30,16 @@ src/
   personas/       ← system prompt builders for Butler, Oracle, etc.
 ```
 
+## Act, don't defer
+
+If a task is within your capabilities, do it. Do not describe it as something the human needs to handle manually unless there is a genuine blocker (missing credentials, a required human decision, etc.). When in doubt, attempt the task and note any issues rather than pre-emptively handing it back.
+
+## File and git operations
+
+Use Claude's built-in tools (Write, Edit, Read) for file operations — not shell commands — wherever possible. This avoids permission prompts and is more reliable.
+
+For git commits, use `git commit -m "title" -m "body"` directly. Do not use shell substitution (`$()`, heredocs, pipes) inside commit commands — it triggers permission prompts. If the message is complex, write it with the Write tool and use `git commit -F`.
+
 ## Worker autonomy
 
 Workers operate autonomously — they must not pause mid-task for permission prompts. `.claude/settings.json` pre-approves the standard tool set (git, bun, file operations). Workers should proceed without requesting additional permissions for any command within that set.
