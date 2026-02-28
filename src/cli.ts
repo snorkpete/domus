@@ -1,6 +1,7 @@
 import { version } from "../package.json";
 import { runAdd } from "./commands/add.ts";
 import { runInit } from "./commands/init.ts";
+import { runWork } from "./commands/work.ts";
 
 const USAGE = `
 Domus — personal workflow and AI orchestration system
@@ -37,8 +38,7 @@ async function main() {
     case undefined:
     case "work":
     case "connect":
-      console.error("Butler session not yet implemented.");
-      process.exit(1);
+      await runWork();
       break;
 
     case "idea":
