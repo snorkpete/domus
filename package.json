@@ -1,0 +1,18 @@
+{
+  "name": "domus",
+  "version": "0.1.0",
+  "type": "module",
+  "bin": {
+    "domus": "./dist/cli.js"
+  },
+  "scripts": {
+    "build": "bun build src/cli.ts --outdir dist --target bun",
+    "dev": "bun run src/cli.ts",
+    "test": "bun test",
+    "lint": "biome check ."
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^1.9.4",
+    "bun-types": "latest"
+  }
+}
