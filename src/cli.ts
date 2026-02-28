@@ -1,4 +1,5 @@
 import { version } from "../package.json";
+import { runAdd } from "./commands/add.ts";
 import { runInit } from "./commands/init.ts";
 
 const USAGE = `
@@ -50,8 +51,7 @@ async function main() {
       break;
 
     case "add":
-      console.error("domus add not yet implemented.");
-      process.exit(1);
+      await runAdd(args.slice(1));
       break;
 
     case "foreman":
