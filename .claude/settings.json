@@ -9,7 +9,12 @@
       "Bash(bunx:*)",
       "Bash(mkdir:*)",
       "Bash(touch:*)",
-      "Bash(rm:*)"
+      "Bash(rm:*)",
+      "Bash(echo:*)",
+      "Bash(printf:*)",
+      "Bash(cat:*)",
+      "Bash(cp:*)",
+      "Bash(mv:*)"
     ]
   }
 }
