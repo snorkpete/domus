@@ -144,6 +144,17 @@ Before a Worker starts a task, Domus assembles:
 
 Workers run Claude Code in non-interactive mode. They receive their context package, execute against it, and produce output (an MR). They do not ask questions mid-task — if a task is ambiguous, that is a failure of context assembly, not a Worker failure.
 
+**Starting a task:** The Worker's first action is to display the ticket it has received. This makes the scope visible and provides a clear record of what was attempted.
+
+**Mid-task blockers:** Workers never pause to ask. If something is genuinely ambiguous or blocked, note it in `WORKER_NOTES.md` at the repo root and continue with the rest of the task. The Foreman or human reviews notes after the MR is raised.
+
+**Completing a task:** Before marking work done, a Worker must:
+1. Confirm all acceptance criteria are met
+2. Run tests — all must pass
+3. Run lint — must be clean
+4. Produce a single commit (squash if needed). Multiple commits signal the ticket was too large — note it in `WORKER_NOTES.md`
+5. The branch is ready for the Gatekeeper
+
 Workers use **git worktrees** for isolation. Each Worker gets its own worktree under `workspace/worktrees/<project>/`, separate from the main project repo checkout.
 
 ### Claude Code Permissions
