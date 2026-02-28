@@ -1,4 +1,5 @@
 import { version } from "../package.json";
+import { runInit } from "./commands/init.ts";
 
 const USAGE = `
 Domus — personal workflow and AI orchestration system
@@ -20,45 +21,48 @@ Options:
 const args = process.argv.slice(2);
 const command = args[0];
 
-switch (command) {
-  case "--version":
-  case "-v":
-    console.log(version);
-    break;
+async function main() {
+  switch (command) {
+    case "--version":
+    case "-v":
+      console.log(version);
+      break;
 
-  case "--help":
-  case "-h":
-    console.log(USAGE);
-    break;
+    case "--help":
+    case "-h":
+      console.log(USAGE);
+      break;
 
-  case undefined:
-  case "work":
-  case "connect":
-    console.error("Butler session not yet implemented.");
-    process.exit(1);
-    break;
+    case undefined:
+    case "work":
+    case "connect":
+      console.error("Butler session not yet implemented.");
+      process.exit(1);
+      break;
 
-  case "idea":
-    console.error("Oracle session not yet implemented.");
-    process.exit(1);
-    break;
+    case "idea":
+      console.error("Oracle session not yet implemented.");
+      process.exit(1);
+      break;
 
-  case "init":
-    console.error("domus init not yet implemented.");
-    process.exit(1);
-    break;
+    case "init":
+      await runInit(args.slice(1));
+      break;
 
-  case "add":
-    console.error("domus add not yet implemented.");
-    process.exit(1);
-    break;
+    case "add":
+      console.error("domus add not yet implemented.");
+      process.exit(1);
+      break;
 
-  case "foreman":
-    console.error("Foreman not yet implemented.");
-    process.exit(1);
-    break;
+    case "foreman":
+      console.error("Foreman not yet implemented.");
+      process.exit(1);
+      break;
 
-  default:
-    console.error(`Unknown command: ${command}`);
-    process.exit(1);
+    default:
+      console.error(`Unknown command: ${command}`);
+      process.exit(1);
+  }
 }
+
+await main();
