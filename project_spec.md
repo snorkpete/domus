@@ -216,14 +216,17 @@ In v0.1, notifications are pull-based: Butler checks a worker status file at the
     everycent/                  ← external project worktrees still land here
       fix-some-bug/
   store/                        ← human-readable data (tracked by workspace git)
-    global/                     ← cross-project tasks and decisions
+    global/                     ← cross-project data
+      ideas/                    ← raw ideas not yet through the Study
       tasks/
       decisions/
     domus/                      ← per-project data
+      ideas/                    ← raw ideas (pre-Oracle inbox)
       tasks/
       specs/
       decisions/
     everycent/
+      ideas/
       tasks/
       specs/
       decisions/
