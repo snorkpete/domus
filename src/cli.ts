@@ -1,3 +1,4 @@
+#!/usr/bin/env bun
 import { version } from "../package.json";
 import { runAdd } from "./commands/add.ts";
 import { runDispatch } from "./commands/dispatch.ts";
