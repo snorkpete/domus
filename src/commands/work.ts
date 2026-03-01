@@ -1,6 +1,7 @@
 import { readdir } from "node:fs/promises";
 import { join } from "node:path";
 import { listProjects } from "../lib/projects.ts";
+import { checkClaudeInstalled, launchSession } from "../lib/session.ts";
 import { resolveWorkspace } from "../lib/workspace.ts";
 import { buildButlerPrompt } from "../personas/butler.ts";
 
@@ -40,11 +41,6 @@ async function readWorkerStatus(workspacePath: string) {
   return summary;
 }
 
-function checkClaudeInstalled(): boolean {
-  const result = Bun.spawnSync(["which", "claude"]);
-  return result.exitCode === 0;
-}
-
 export async function runWork(): Promise<void> {
   if (!checkClaudeInstalled()) {
     console.error(
@@ -68,10 +64,5 @@ export async function runWork(): Promise<void> {
 
   const prompt = buildButlerPrompt({ workspacePath, projects, workerStatus });
 
-  const proc = Bun.spawn(["claude", "--append-system-prompt", prompt], {
-    cwd: workspacePath,
-    stdio: ["inherit", "inherit", "inherit"],
-  });
-
-  await proc.exited;
+  await launchSession(prompt, workspacePath);
 }
