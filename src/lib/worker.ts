@@ -118,11 +118,12 @@ export async function dispatchWorker(
   await mkdir(logsDir, { recursive: true });
   const logFile = join(logsDir, `${workerId}.log`);
 
+  const { CLAUDECODE: _, ...workerEnv } = process.env;
   const proc = Bun.spawn(
     ["claude", "--print", "--append-system-prompt", context],
     {
       cwd: worktreePath,
-      env: process.env,
+      env: workerEnv,
       stdout: Bun.file(logFile),
       stderr: Bun.file(logFile),
     },
