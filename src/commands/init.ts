@@ -27,6 +27,26 @@ worktrees/
 .domus/
 `;
 
+const CLAUDE_SETTINGS = JSON.stringify(
+  {
+    permissions: {
+      allow: [
+        "Bash(git *)",
+        "Bash(git -C *)",
+        "Bash(cd * && git *)",
+        "Bash(bun *)",
+        "Read",
+        "Edit",
+        "Write",
+        "Glob",
+        "Grep",
+      ],
+    },
+  },
+  null,
+  2,
+);
+
 async function confirm(message: string): Promise<boolean> {
   const rl = createInterface({ input: process.stdin, output: process.stdout });
   return new Promise((resolve) => {
@@ -73,8 +93,13 @@ export async function runInit(
     await mkdir(`${workspacePath}/${dir}`, { recursive: true });
   }
 
+  await mkdir(`${workspacePath}/.claude`, { recursive: true });
   await Bun.write(`${workspacePath}/projects.md`, PROJECTS_MD);
   await Bun.write(`${workspacePath}/.gitignore`, GITIGNORE);
+  await Bun.write(
+    `${workspacePath}/.claude/settings.json`,
+    `${CLAUDE_SETTINGS}\n`,
+  );
   await writeWorkspaceConfig(workspacePath);
 
   console.log(`Domus workspace initialised at: ${workspacePath}`);

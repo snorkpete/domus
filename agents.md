@@ -40,6 +40,8 @@ Use Claude's built-in tools (Write, Edit, Read) for file operations — not shel
 
 For git commits, use `git commit -m "title" -m "body"` directly. Do not use shell substitution (`$()`, heredocs, pipes) inside commit commands — it triggers permission prompts. If the message is complex, write it with the Write tool and use `git commit -F`.
 
+When running git commands in a directory other than the current working directory, always use `git -C /path/to/repo <command>` — never `cd /path && git <command>`. The compound `cd && git` form triggers a security prompt on every use. `git -C` is equivalent and avoids the issue entirely.
+
 ## Worker autonomy
 
 Workers operate autonomously — they must not pause mid-task for permission prompts. `.claude/settings.json` pre-approves the standard tool set (git, bun, file operations). Workers should proceed without requesting additional permissions for any command within that set.

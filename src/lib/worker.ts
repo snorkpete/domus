@@ -96,7 +96,10 @@ export async function dispatchWorker(
     ? ["git", "worktree", "add", worktreePath, ticket.branch]
     : ["git", "worktree", "add", "-b", ticket.branch, worktreePath];
 
-  const worktreeResult = Bun.spawnSync(worktreeArgs, { cwd: project.path, env: process.env });
+  const worktreeResult = Bun.spawnSync(worktreeArgs, {
+    cwd: project.path,
+    env: process.env,
+  });
   if (worktreeResult.exitCode !== 0) {
     throw new Error(
       `Failed to create worktree: ${new TextDecoder().decode(worktreeResult.stderr)}`,

@@ -33,7 +33,11 @@ function parseProjectsTable(content: string): Project[] {
     }
     if (!pastHeader) continue;
 
-    projects.push({ name: cells[0], path: expandPath(cells[1]), added: cells[2] });
+    projects.push({
+      name: cells[0],
+      path: expandPath(cells[1]),
+      added: cells[2],
+    });
   }
 
   return projects;
