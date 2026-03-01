@@ -51,6 +51,7 @@ export async function runInit(
   const confirmFn = options.confirmFn ?? confirm;
 
   if (existsSync(`${workspacePath}/.domus`)) {
+    await writeWorkspaceConfig(workspacePath);
     console.log("This directory is already a Domus workspace.");
     return;
   }

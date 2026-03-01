@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "type": "module",
   "bin": {
-    "domus": "./dist/cli.js"
+    "domus": "./src/cli.ts"
   },
   "scripts": {
     "build": "bun build src/cli.ts --outdir dist --target bun",
