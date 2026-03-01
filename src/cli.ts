@@ -43,7 +43,7 @@ async function main() {
       break;
 
     case "idea":
-      await runIdea();
+      await runIdea(args.slice(1));
       break;
 
     case "init":
