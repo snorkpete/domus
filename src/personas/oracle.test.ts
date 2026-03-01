@@ -69,3 +69,20 @@ test("prompt instructs Oracle to confirm slug before writing", () => {
   const prompt = buildOraclePrompt(baseCtx);
   expect(prompt.toLowerCase()).toContain("confirm");
 });
+
+test("prompt includes close-out protocol with handoff path", () => {
+  const prompt = buildOraclePrompt(baseCtx);
+  expect(prompt).toContain(".domus/handoff/oracle.md");
+  expect(prompt).toContain(".domus/sessions/oracle.json");
+});
+
+test("prompt includes transition banner", () => {
+  const prompt = buildOraclePrompt(baseCtx);
+  expect(prompt).toContain("═══ Returning to Butler ═══");
+});
+
+test("workspace path is interpolated into close-out paths", () => {
+  const prompt = buildOraclePrompt({ ...baseCtx, workspacePath: "/my/ws" });
+  expect(prompt).toContain("/my/ws/.domus/handoff/oracle.md");
+  expect(prompt).toContain("/my/ws/.domus/sessions/oracle.json");
+});

@@ -102,3 +102,17 @@ test("prompt includes roster content", () => {
   expect(prompt).toContain("## Oracle");
   expect(prompt).toContain("ideation");
 });
+
+test("prompt includes last handoff when provided", () => {
+  const prompt = buildButlerPrompt({
+    ...baseCtx,
+    lastHandoff: "## Oracle handoff\n\nIdea: a new feature",
+  });
+  expect(prompt).toContain("Last session handoff");
+  expect(prompt).toContain("a new feature");
+});
+
+test("prompt omits last handoff section when not provided", () => {
+  const prompt = buildButlerPrompt(baseCtx);
+  expect(prompt).not.toContain("Last session handoff");
+});
