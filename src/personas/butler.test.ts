@@ -5,6 +5,7 @@ const baseCtx = {
   workspacePath: "/workspace",
   projects: [],
   workerStatus: { running: [], mrReady: [], failed: [] },
+  roster: "## Oracle\n- Role: ideation",
 };
 
 test("prompt includes workspace path", () => {
@@ -73,4 +74,10 @@ test("prompt includes failed workers", () => {
 test("prompt notes no workers when status is empty", () => {
   const prompt = buildButlerPrompt(baseCtx);
   expect(prompt).toContain("No workers");
+});
+
+test("prompt includes roster content", () => {
+  const prompt = buildButlerPrompt(baseCtx);
+  expect(prompt).toContain("## Oracle");
+  expect(prompt).toContain("ideation");
 });

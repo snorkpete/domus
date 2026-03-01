@@ -5,6 +5,8 @@ import { checkClaudeInstalled, launchSession } from "../lib/session.ts";
 import { resolveWorkspace } from "../lib/workspace.ts";
 import { buildButlerPrompt } from "../personas/butler.ts";
 
+const ROSTER_PATH = join(import.meta.dir, "../personas/roster.md");
+
 type WorkerFile = {
   status: string;
   workerId: string;
@@ -57,12 +59,18 @@ export async function runWork(): Promise<void> {
     process.exit(1);
   }
 
-  const [projects, workerStatus] = await Promise.all([
+  const [projects, workerStatus, roster] = await Promise.all([
     listProjects(),
     readWorkerStatus(workspacePath),
+    Bun.file(ROSTER_PATH).text(),
   ]);
 
-  const prompt = buildButlerPrompt({ workspacePath, projects, workerStatus });
+  const prompt = buildButlerPrompt({
+    workspacePath,
+    projects,
+    workerStatus,
+    roster,
+  });
 
   await launchSession(prompt, workspacePath);
 }
