@@ -18,6 +18,27 @@ test("prompt includes Butler role description", () => {
   expect(prompt).toContain("Butler");
 });
 
+test("prompt instructs Butler to route, not answer", () => {
+  const prompt = buildButlerPrompt(baseCtx);
+  expect(prompt).toContain("route");
+  expect(prompt).toContain("Do not answer substantive questions yourself");
+});
+
+test("prompt instructs Butler to use Bash tool to launch personas", () => {
+  const prompt = buildButlerPrompt(baseCtx);
+  expect(prompt).toContain("Bash tool");
+});
+
+test("prompt instructs Butler to read handoff file after session", () => {
+  const prompt = buildButlerPrompt(baseCtx);
+  expect(prompt).toContain(".domus/handoff/");
+});
+
+test("prompt instructs Butler to log unhandled requests", () => {
+  const prompt = buildButlerPrompt(baseCtx);
+  expect(prompt).toContain(".domus/logs/routing.log");
+});
+
 test("prompt lists registered projects", () => {
   const prompt = buildButlerPrompt({
     ...baseCtx,
