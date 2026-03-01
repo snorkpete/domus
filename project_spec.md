@@ -28,7 +28,7 @@ Domus is organised around the metaphor of a grand estate that runs itself. It ha
 
 - **Rooms** = domains of work type. Each room has a defined input and output.
 - **Staff** = specialists who operate within or across rooms.
-- **Mailroom** = the central routing hub. No room ever talks directly to another — all outputs pass through the Mailroom, which routes them to the correct next room.
+- **Mailroom** = the routing hub for work items. Work items (specs, tickets, MRs) flow through the Mailroom; session state and direct store writes bypass it.
 
 ---
 
@@ -50,7 +50,7 @@ Every room follows a standard contract: defined inputs, defined outputs. Work fl
 ### Notes
 - The **Grounds** is the only location outside the house. The Thief operates externally, attempting to compromise the system. Findings route back through the Mailroom to the Infirmary.
 - The **Observatory** feeds the self-correcting loop (see below). Its input comes from outside Domus — a companion tracking SDK instrumented in each managed project.
-- All outputs, without exception, pass through the **Mailroom**.
+- Work items (specs, tickets, MRs) route through the **Mailroom**. Session state and direct store writes (e.g. Oracle → specs, Worker → branch commits) bypass it — the Mailroom principle applies to work item routing only.
 
 ---
 
@@ -66,7 +66,7 @@ Every room follows a standard contract: defined inputs, defined outputs. Work fl
 | **Workers** | Workshop | Implement tickets; produce MRs. Plural — many workers can operate in parallel |
 | **Scribes** | Workshop | A specialisation of Worker focused on documentation tasks |
 | **Gatekeeper** | Gatehouse | Reviews MRs, manages merge conflicts, ensures ordered and safe merging into the codebase |
-| **Foreman** | Mailroom | Routes work between rooms; prioritises the queue |
+| **Foreman** | Mailroom | Routes work between rooms; prioritises the queue. *(Deferred — Butler handles worker dispatch directly in v0.1)* |
 | **Doctor** | Infirmary | Oversees system health; delegates to specialists |
 | **Inspector** | Infirmary | Roams the codebase looking for quality issues, footguns, dead code, and bad patterns |
 | **Auditor** | Infirmary | Takes Thief's security findings; creates bug tickets or routes vague risks to the Study |
@@ -77,7 +77,7 @@ Every room follows a standard contract: defined inputs, defined outputs. Work fl
 
 | Role | Responsibility |
 |------|----------------|
-| **Butler** | Primary human interface and router. Launches the appropriate persona based on the human's intent. Handles the meta-conversation between sessions: worker status, persona handoffs, what needs attention. Does not answer substantive questions directly — routes to the persona best suited for the work. |
+| **Butler** | Primary human interface and router. Launches the appropriate persona based on the human's intent. Handles the meta-conversation between sessions: worker status, persona handoffs, what needs attention. Does not answer substantive questions directly — routes to the persona best suited for the work. In v0.1, handles worker dispatch directly (no Foreman layer). |
 | **Herald** | Manages the human feedback loop. Compiles the morning briefing on `domus connect`. Sends push notifications (email, WhatsApp) for urgent items. Escalates blockers. |
 | **Chamberlain** | System configuration and maintenance. Updates config files on behalf of the user (via Butler), commits changes to git. |
 
@@ -166,7 +166,7 @@ Workers run Claude Code in non-interactive mode. They receive their context pack
 
 **Starting a task:** The Worker's first action is to display the ticket it has received. This makes the scope visible and provides a clear record of what was attempted.
 
-**Mid-task blockers:** Workers never pause to ask. If something is genuinely ambiguous or blocked, note it in `WORKER_NOTES.md` at the repo root and continue with the rest of the task. The Foreman or human reviews notes after the MR is raised.
+**Mid-task blockers:** Workers never pause to ask. If something is genuinely ambiguous or blocked, note it in `WORKER_NOTES.md` at the repo root and continue with the rest of the task. Butler or the human reviews notes after the MR is raised.
 
 **Completing a task:** Before marking work done, a Worker must:
 1. Confirm all acceptance criteria are met
@@ -416,7 +416,7 @@ V0.1 is the minimal working loop: human → Butler → Workers → MRs → human
 - Daemon / persistent background process
 - Herald push notifications (email, WhatsApp)
 - `domus workers pause / continue`
-- Mailroom routing, Foreman
+- Foreman (Butler handles worker dispatch directly in v0.1)
 - Observatory / Stargazer
 - Infirmary / Doctor
 - Formal Gatekeeper (human reviews MRs manually in v0.1)
