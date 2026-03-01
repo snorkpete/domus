@@ -77,7 +77,7 @@ Every room follows a standard contract: defined inputs, defined outputs. Work fl
 
 | Role | Responsibility |
 |------|----------------|
-| **Butler** | Primary human interface. Entry point for most interactions — when you broadly know what you want. Can scope to a specific project or operate across all of them. |
+| **Butler** | Primary human interface and router. Launches the appropriate persona based on the human's intent. Handles the meta-conversation between sessions: worker status, persona handoffs, what needs attention. Does not answer substantive questions directly — routes to the persona best suited for the work. |
 | **Herald** | Manages the human feedback loop. Compiles the morning briefing on `domus connect`. Sends push notifications (email, WhatsApp) for urgent items. Escalates blockers. |
 | **Chamberlain** | System configuration and maintenance. Updates config files on behalf of the user (via Butler), commits changes to git. |
 
@@ -123,6 +123,26 @@ The Quartermaster takes product specs and decomposes them into implementable wor
 - **Don't ask about bookkeeping** — spec updates, ticket creation, and decision logging are done automatically.
 - **Own the design-to-ticket transition** — the Quartermaster senses when enough has been designed to begin ticketing and names that moment explicitly, rather than waiting for the human to call it. Let design breathe, but don't let it run indefinitely.
 - **Edit, don't rewrite** — when updating living documents like the project spec, make targeted edits. Full rewrites are lossy and risk dropping context that wasn't meant to be removed.
+
+---
+
+## The Butler
+
+The Butler is the primary human interface and the router for all interactive sessions. When you connect to Domus, you are talking to Butler. Butler's job is not to answer your questions — it is to identify which persona should answer them and launch that persona.
+
+### Butler Behaviour
+
+- **Route, don't answer** — when the human expresses intent, Butler identifies the appropriate persona and launches it. Substantive questions belong to the persona best suited for the work, not to Butler.
+- **Launch personas via shell commands** — Butler uses its Bash tool to invoke `domus idea`, `domus foreman run`, and other commands. It does not tell the human to run commands manually.
+- **Handle the meta-conversation** — between persona sessions, Butler is the voice. It surfaces worker status, reads the last persona's handoff summary, and asks what's next.
+- **Fallback for unroutable requests** — if no persona fits the request, Butler launches a generic helper session and logs the unhandled request to `.domus/logs/routing.log` for later review. This is a signal that a persona may be missing.
+- **Stay brief** — Butler is a coordinator, not a conversationalist. Between sessions it is concise. It does not elaborate unless asked.
+
+### What Butler Is Aware Of
+
+- The persona roster — who exists, what they handle, how to launch them
+- Worker status — what is running, what is ready for review, what has failed
+- The last persona's handoff summary — what was accomplished in the session that just ended
 
 ---
 
@@ -179,13 +199,15 @@ domus work
 ```
 Also available as `domus connect` (alias — same command). `domus` with no arguments is also an alias.
 
-Domus runs as a persistent background daemon — it is always on. `domus work` connects you to the running system and drops you into an interactive Butler session. Over time this gains additional behaviour: the Herald compiles a morning briefing (what was completed, what needs your attention, what is blocked) presented at the start of each session.
+Domus runs as a persistent background daemon — it is always on. `domus work` connects you to the running system and drops you into an interactive Butler session. Butler routes to other personas from within the session — the human does not need to invoke separate commands to switch context. Over time this gains additional behaviour: the Herald compiles a morning briefing (what was completed, what needs your attention, what is blocked) presented at the start of each session.
 
 ### Ideation Entry Point
 ```
 domus idea
 ```
-Drops the user into an interactive Oracle session with the Oracle persona pre-configured. Output is a product spec written to `store/<project>/specs/`.
+Drops the user directly into an interactive Oracle session with the Oracle persona pre-configured. Output is a product spec written to `store/<project>/specs/`.
+
+Also callable internally by Butler — when the human expresses intent to explore an idea, Butler launches Oracle via this command with a minimal context handoff. Both paths (direct and Butler-triggered) are valid.
 
 ### Initialising the Workspace
 ```
@@ -210,6 +232,40 @@ Deferred to a later version. Relevant once a task backlog and daemon exist.
 ### Notifications
 
 In v0.1, notifications are pull-based: Butler checks a worker status file at the start of each response and reports completed MRs. Push notifications (Herald via email/WhatsApp) are a later addition.
+
+---
+
+## Interactive Session Model
+
+All interactive Domus staff run as a single continuous terminal session from the human's perspective. `domus` / `domus work` launches Butler. Butler routes to other personas from within the session — the human does not manually switch modes. The terminal hands off to each persona sequentially; Butler resumes when the persona exits.
+
+This model applies from v0.1 onwards. Non-interactive staff (Workers and background processes) are entirely separate — they spawn, execute, and report back via status files, independent of which interactive persona is currently active.
+
+### Persona Lifecycle
+
+1. **Butler identifies intent** — the human expresses what they want to do; Butler determines which persona should handle it
+2. **Butler launches the persona** — via shell command, passing a minimal context handoff (not the full conversation — only what the persona needs)
+3. **Persona works** — writes to the store incrementally as the session progresses; the store is the durable output, not the conversation
+4. **Persona closes** — on clean exit, the persona writes a brief handoff summary to `.domus/handoff/<persona>.md`, updates `.domus/sessions/<persona>.json` to `{ status: "closed" }`, and prints a transition banner
+5. **Butler resumes** — reads the handoff summary, opens with what was accomplished, asks what's next
+
+### Context Handoff
+
+Each persona receives the minimum context needed for its job — not a full transcript of the Butler session. This keeps each persona's context window lean and focused. The store is the shared memory layer; personas read from and write to it rather than passing state through Butler.
+
+### Visual Transitions
+
+A banner is printed when a persona starts and when it returns control to Butler:
+
+```
+═══ Oracle — The Study ═══
+...
+═══ Returning to Butler ═══
+```
+
+### Session State
+
+Each interactive persona saves its Claude Code session ID to `.domus/sessions/<persona>.json` at launch. If a session is killed unexpectedly (without a clean close), the session ID enables potential resumption on next launch. See ticket 014 for the resume flow.
 
 ---
 
