@@ -85,6 +85,13 @@ Every room follows a standard contract: defined inputs, defined outputs. Work fl
 
 ## The Oracle
 
+```yaml
+slug: oracle-session
+status: live
+version: v0.1
+ticket: "005"
+```
+
 The Oracle is the entry point for ideation — the character you talk to in the Study when you have something vague and need to think it through. The Oracle's job is not to solve the problem but to help the human understand what problem they are actually trying to solve.
 
 ### Oracle Behaviour
@@ -112,6 +119,13 @@ The Oracle is always a collaboration. A product spec is never Oracle output alon
 
 ## The Quartermaster
 
+```yaml
+slug: quartermaster
+status: live
+version: v0.1
+ticket: ~
+```
+
 The Quartermaster takes product specs and decomposes them into implementable work tickets. This is primarily a translation role — from human intent to machine-executable tasks.
 
 ### Quartermaster Behaviour
@@ -127,6 +141,13 @@ The Quartermaster takes product specs and decomposes them into implementable wor
 ---
 
 ## The Butler
+
+```yaml
+slug: butler-session
+status: live
+version: v0.1
+ticket: "004"
+```
 
 The Butler is the primary human interface and the router for all interactive sessions. When you connect to Domus, you are talking to Butler. Butler's job is not to answer your questions — it is to identify which persona should answer them and launch that persona.
 
@@ -147,6 +168,13 @@ The Butler is the primary human interface and the router for all interactive ses
 ---
 
 ## Worker Context Assembly
+
+```yaml
+slug: worker-dispatch
+status: live
+version: v0.1
+ticket: "006"
+```
 
 A Worker is only as good as the context it receives. Domus is responsible for assembling a complete context package before any Worker session begins. The Worker itself can be simple — intelligence lives in the assembly, not the execution.
 
@@ -194,14 +222,16 @@ Unreliable Workers are almost always a context problem. When a Worker produces b
 ## Human Experience
 
 ### Connecting
+
 ```
 domus work
 ```
 Also available as `domus connect` (alias — same command). `domus` with no arguments is also an alias.
 
-Domus runs as a persistent background daemon — it is always on. `domus work` connects you to the running system and drops you into an interactive Butler session. Butler routes to other personas from within the session — the human does not need to invoke separate commands to switch context. Over time this gains additional behaviour: the Herald compiles a morning briefing (what was completed, what needs your attention, what is blocked) presented at the start of each session.
+In v0.1, `domus work` launches a Claude Code session directly with the Butler persona. Butler routes to other personas from within the session — the human does not need to invoke separate commands to switch context. A persistent background daemon is introduced in v0.1.1 (see `interactive-session-switching`). Over time this gains additional behaviour: the Herald compiles a morning briefing (what was completed, what needs your attention, what is blocked) presented at the start of each session.
 
 ### Ideation Entry Point
+
 ```
 domus idea
 ```
@@ -210,12 +240,28 @@ Drops the user directly into an interactive Oracle session with the Oracle perso
 Also callable internally by Butler — when the human expresses intent to explore an idea, Butler launches Oracle via this command with a minimal context handoff. Both paths (direct and Butler-triggered) are valid.
 
 ### Initialising the Workspace
+
+```yaml
+slug: domus-init
+status: live
+version: v0.1
+ticket: "002"
+```
+
 ```
 domus init
 ```
 Works like `git init` — run it from inside a directory to designate it as the Domus workspace. Creates the folder structure. The workspace path is wherever you ran `domus init`.
 
 ### Adding Projects
+
+```yaml
+slug: domus-add-project
+status: live
+version: v0.1
+ticket: "003"
+```
+
 ```
 domus add project <git-url>    # clones into workspace/projects/
 domus add project <local-path> # registers an existing repo at its current location
@@ -223,6 +269,14 @@ domus add project <local-path> # registers an existing repo at its current locat
 Projects do not have to live inside the workspace. Domus records the filesystem path in `projects.md` and works with the repo wherever it lives. If a project is registered at an external path and later needs to move into the workspace, `domus move project <name>` handles that.
 
 ### Controlling Workers
+
+```yaml
+slug: worker-controls
+status: planned
+version: ~
+ticket: ~
+```
+
 ```
 domus workers pause
 domus workers continue
@@ -237,17 +291,39 @@ In v0.1, notifications are pull-based: Butler checks a worker status file at the
 
 ## Interactive Session Model
 
+```yaml
+slug: interactive-session-switching
+status: planned
+version: v0.1.1
+ticket: ~
+```
+
 All interactive Domus staff run as a single continuous terminal session from the human's perspective. `domus` / `domus work` launches Butler. Butler routes to other personas from within the session — the human does not manually switch modes. The terminal hands off to each persona sequentially; Butler resumes when the persona exits.
 
-This model applies from v0.1 onwards. Non-interactive staff (Workers and background processes) are entirely separate — they spawn, execute, and report back via status files, independent of which interactive persona is currently active.
+Non-interactive staff (Workers and background processes) are entirely separate — they spawn, execute, and report back via status files, independent of which interactive persona is currently active.
 
 ### Persona Lifecycle
 
 1. **Butler identifies intent** — the human expresses what they want to do; Butler determines which persona should handle it
-2. **Butler launches the persona** — via shell command, passing a minimal context handoff (not the full conversation — only what the persona needs)
-3. **Persona works** — writes to the store incrementally as the session progresses; the store is the durable output, not the conversation
-4. **Persona closes** — on clean exit, the persona writes a brief handoff summary to `.domus/handoff/<persona>.md`, updates `.domus/sessions/<persona>.json` to `{ status: "closed" }`, and prints a transition banner
-5. **Butler resumes** — reads the handoff summary, opens with what was accomplished, asks what's next
+2. **Butler signals and exits** — Butler writes a next-persona instruction to `.domus/sessions/next.json` (e.g. `{ "launch": "oracle" }`) and exits cleanly
+3. **Domus process launches the persona** — with a minimal context handoff (not the full conversation — only what the persona needs)
+4. **Persona works** — writes to the store incrementally as the session progresses; the store is the durable output, not the conversation
+5. **Persona closes** — on clean exit, the persona writes a brief handoff summary to `.domus/handoff/<persona>.md`, updates `.domus/sessions/<persona>.json` to `{ status: "closed" }`, and prints a transition banner
+6. **Domus relaunches Butler** — Butler reads the handoff summary, opens with what was accomplished, asks what's next
+
+### V0.1 Implementation Note
+
+In v0.1, Butler attempted to launch Oracle directly via a shell command from within its own Claude Code session. This fails: Claude Code prevents nested sessions. The persona lifecycle above requires the persistent `domus` process described in v0.1.1.
+
+### V0.1.1: Session Orchestrator
+
+The `domus` process runs persistently and orchestrates all interactive persona transitions:
+
+- **Persistent process** — `domus` stays running throughout the session as the parent orchestrator; individual personas (Butler, Oracle) are child sessions that start and exit
+- **File-based signalling** — before exiting, Butler writes `{ "launch": "<persona>" }` to `.domus/sessions/next.json`; the domus process reads this and launches the correct persona
+- **Crash recovery** — if a persona exits uncleanly, the signal file persists; domus reads it and relaunches correctly regardless
+- **Manual transition (v0.1.1 UX)** — a keypress (Enter) is required between sessions; fully automatic transitions are a future enhancement
+- **Foundation for future capabilities** — Herald and other system-level components can plug into this persistent process
 
 ### Context Handoff
 
@@ -397,30 +473,31 @@ Most interactive roles (Quartermaster, Scribes, Archivist, Chamberlain) that tou
 
 ---
 
-## V0.1 Scope
+## Release Milestones
 
-V0.1 is the minimal working loop: human → Butler → Workers → MRs → human review.
+Feature status and version targets are tracked via `slug`/`status`/`version` frontmatter on each feature section above. This section provides a narrative summary of each milestone for context.
 
-**In scope:**
-- `domus init` — designates a directory as the Domus workspace, creates folder structure
-- `domus work` / `domus connect` / `domus` — interactive Butler session (Claude Code + Butler persona)
-- `domus idea` — interactive Oracle session (Claude Code + Oracle persona)
-- `domus add project <git-url>` — clone into workspace and register
-- `domus add project <local-path>` — register existing repo at its current location
-- Background Workers dispatched by Butler (Claude Code, non-interactive, git worktrees)
-- Pull-based Worker notifications — Butler checks worker status at the start of each response
-- Pre-configured Claude Code permissions for Workers
-- Workspace store: human-readable markdown for tasks, specs, decisions
-- Two managed projects: Domus itself (dogfooding) and EveryCent
+### V0.1 — Minimal Working Loop
 
-**Deferred:**
-- Daemon / persistent background process
+Human → Butler → Workers → MRs → human review. Core personas (Butler, Oracle), worker dispatch, CLI commands (`init`, `add project`). Interactive session switching was in scope but the implementation was found to require a persistent `domus` process (see v0.1.1).
+
+### V0.1.1 — Session Orchestrator
+
+Fixes the broken interactive session switching from v0.1. Introduces `domus` as a persistent process that orchestrates persona transitions via file-based signalling. Butler and Oracle hand off cleanly without nested Claude Code sessions.
+
+**Features (see `slug: interactive-session-switching` for full details):**
+- Persistent `domus` process as session orchestrator
+- File-based next-persona signalling (`.domus/sessions/next.json`)
+- Manual Enter keypress between sessions (UX)
+- Crash recovery via persistent signal file
+
+**Still deferred:**
 - Herald push notifications (email, WhatsApp)
-- `domus workers pause / continue`
-- Foreman (Butler handles worker dispatch directly in v0.1)
+- `domus workers pause / continue` (`slug: worker-controls`)
+- Foreman (`slug: foreman`)
 - Observatory / Stargazer
 - Infirmary / Doctor
-- Formal Gatekeeper (human reviews MRs manually in v0.1)
+- Formal Gatekeeper (human reviews MRs manually)
 - `domus move project`
 - SQLite query cache
 
