@@ -1,6 +1,11 @@
 import { mkdir } from "node:fs/promises";
+import { homedir } from "node:os";
 import { join } from "node:path";
 import { resolveWorkspace } from "./workspace.ts";
+
+function expandPath(p: string): string {
+  return p.startsWith("~/") ? join(homedir(), p.slice(2)) : p;
+}
 
 export type Project = {
   name: string;
@@ -28,7 +33,7 @@ function parseProjectsTable(content: string): Project[] {
     }
     if (!pastHeader) continue;
 
-    projects.push({ name: cells[0], path: cells[1], added: cells[2] });
+    projects.push({ name: cells[0], path: expandPath(cells[1]), added: cells[2] });
   }
 
   return projects;
