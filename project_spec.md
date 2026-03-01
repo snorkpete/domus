@@ -65,7 +65,7 @@ Every room follows a standard contract: defined inputs, defined outputs. Work fl
 | **Quartermaster** | Office | Takes product specs and decomposes them into implementable work tickets |
 | **Workers** | Workshop | Implement tickets; produce MRs. Plural — many workers can operate in parallel |
 | **Scribes** | Workshop | A specialisation of Worker focused on documentation tasks |
-| **Gatekeeper** | Gatehouse | Reviews MRs, manages merge conflicts, ensures ordered and safe merging into the codebase |
+| **Gatekeeper** | Gatehouse | Reviews MRs, manages merge conflicts, ensures ordered and safe merging into the codebase; deletes source branch (local and remote) after a successful merge |
 | **Foreman** | Mailroom | Routes work between rooms; prioritises the queue. *(Deferred — Butler handles worker dispatch directly in v0.1)* |
 | **Doctor** | Infirmary | Oversees system health; delegates to specialists |
 | **Inspector** | Infirmary | Roams the codebase looking for quality issues, footguns, dead code, and bad patterns |
@@ -369,6 +369,7 @@ The result: a system that observes its own behaviour in production and generates
 - **Worker stuck** — Herald attempts recovery (e.g. kill and restart the session). Escalates to human if unresolvable.
 - **Failure log** — all failures are logged over time. This is institutional memory for improving the system.
 - **Gatekeeper rejects MR** — work re-enters the Mailroom for reassignment or human review.
+- **Gatekeeper merges MR** — source branch is deleted (local and remote) as part of the merge operation. Only on confirmed successful merge; rejected MRs leave the branch intact.
 
 ---
 
