@@ -86,3 +86,17 @@ test("workspace path is interpolated into close-out paths", () => {
   expect(prompt).toContain("/my/ws/.domus/handoff/oracle.md");
   expect(prompt).toContain("/my/ws/.domus/sessions/oracle.json");
 });
+
+test("prompt includes Butler handoff context when provided", () => {
+  const prompt = buildOraclePrompt({
+    ...baseCtx,
+    context: "Human mentioned wanting a budget tracking feature",
+  });
+  expect(prompt).toContain("Butler handoff context");
+  expect(prompt).toContain("budget tracking feature");
+});
+
+test("prompt omits context section when not provided", () => {
+  const prompt = buildOraclePrompt(baseCtx);
+  expect(prompt).not.toContain("Butler handoff context");
+});

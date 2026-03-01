@@ -39,6 +39,8 @@ Workspace: {{WORKSPACE}}
 Registered projects:
 {{PROJECTS}}
 
+{{CONTEXT}}
+
 At the start of the session, ask the human which project their idea relates to (or if it is cross-project/global). Then begin drawing out the idea with questions.
 
 ## Close-out protocol

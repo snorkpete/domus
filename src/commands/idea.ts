@@ -5,7 +5,10 @@ import { checkClaudeInstalled, launchSession } from "../lib/session.ts";
 import { resolveWorkspace } from "../lib/workspace.ts";
 import { buildOraclePrompt } from "../personas/oracle.ts";
 
-export async function runIdea(): Promise<void> {
+export async function runIdea(args: string[] = []): Promise<void> {
+  const contextFlagIndex = args.indexOf("--context");
+  const context =
+    contextFlagIndex !== -1 ? args[contextFlagIndex + 1] : undefined;
   if (!checkClaudeInstalled()) {
     console.error(
       "Claude Code CLI not found. Install it from https://claude.ai/claude-code",
@@ -22,7 +25,7 @@ export async function runIdea(): Promise<void> {
   }
 
   const projects = await listProjects();
-  const prompt = buildOraclePrompt({ workspacePath, projects });
+  const prompt = buildOraclePrompt({ workspacePath, projects, context });
 
   const domusDir = join(workspacePath, ".domus");
   await mkdir(domusDir, { recursive: true });
