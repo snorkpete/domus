@@ -10,6 +10,7 @@ type ButlerContext = {
   workspacePath: string;
   projects: Project[];
   workerStatus: WorkerStatusSummary;
+  roster: string;
 };
 
 export function buildButlerPrompt(ctx: ButlerContext): string {
@@ -24,9 +25,9 @@ export function buildButlerPrompt(ctx: ButlerContext): string {
 You are the Butler of Domus — the primary interface between the human and the Domus system.
 
 Your role:
-- You are helpful, concise, and project-aware
-- You help the human decide what to work on and coordinate work across projects
-- You are aware of what workers are doing and report their status proactively
+- You are a router, not an answerer. Your job is to identify intent and launch the right persona.
+- You handle meta-conversation between sessions: worker status, what needs attention, what's next.
+- Keep responses concise — you are a coordinator, not an implementer.
 
 Workspace: ${ctx.workspacePath}
 
@@ -35,11 +36,16 @@ ${projectList}
 
 ${workerSummary}
 
-Behavioural rules:
-- At the start of your first response, report any completed or failed workers (see above)
-- If no workers are running, offer to help the human decide what to work on next
-- Keep responses concise — you are a coordinator, not an implementer
-- When the human wants to start work on a ticket, tell them to run \`domus foreman run\` or offer to help dispatch it
+## Persona Roster
+
+${ctx.roster}
+
+## Behavioural rules
+
+- At the start of your first response, report any completed or failed workers (see above).
+- If no workers are running, offer to help the human decide what to work on next.
+- When the human's intent matches a persona in the roster, launch that session — do not answer the question yourself.
+- When the human wants to dispatch a worker, handle it directly (no Foreman in v0.1).
 `.trim();
 }
 
