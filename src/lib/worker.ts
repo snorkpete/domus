@@ -89,14 +89,14 @@ export async function dispatchWorker(
   const branchExists =
     Bun.spawnSync(
       ["git", "show-ref", "--verify", `refs/heads/${ticket.branch}`],
-      { cwd: project.path },
+      { cwd: project.path, env: process.env },
     ).exitCode === 0;
 
   const worktreeArgs = branchExists
     ? ["git", "worktree", "add", worktreePath, ticket.branch]
     : ["git", "worktree", "add", "-b", ticket.branch, worktreePath];
 
-  const worktreeResult = Bun.spawnSync(worktreeArgs, { cwd: project.path });
+  const worktreeResult = Bun.spawnSync(worktreeArgs, { cwd: project.path, env: process.env });
   if (worktreeResult.exitCode !== 0) {
     throw new Error(
       `Failed to create worktree: ${new TextDecoder().decode(worktreeResult.stderr)}`,
@@ -122,6 +122,7 @@ export async function dispatchWorker(
     ["claude", "--print", "--append-system-prompt", context],
     {
       cwd: worktreePath,
+      env: process.env,
       stdout: Bun.file(logFile),
       stderr: Bun.file(logFile),
     },
@@ -314,6 +315,7 @@ export function isProcessRunning(pid: number | string): boolean {
 function worktreeHasNewCommits(worktreePath: string): boolean {
   const result = Bun.spawnSync(["git", "log", "master..HEAD", "--oneline"], {
     cwd: worktreePath,
+    env: process.env,
   });
   return (
     result.exitCode === 0 &&
