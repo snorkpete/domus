@@ -15,6 +15,7 @@ type ButlerContext = {
   projects: Project[];
   workerStatus: WorkerStatusSummary;
   roster: string;
+  lastHandoff?: string;
 };
 
 export function buildButlerPrompt(ctx: ButlerContext): string {
@@ -25,10 +26,15 @@ export function buildButlerPrompt(ctx: ButlerContext): string {
       ? ctx.projects.map((p) => `  - ${p.name}: ${p.path}`).join("\n")
       : "  (no projects registered yet — use `domus add project` to register one)";
 
+  const lastHandoffSection = ctx.lastHandoff
+    ? `## Last session handoff\n\n${ctx.lastHandoff}`
+    : "";
+
   return template
     .replace("{{WORKSPACE}}", ctx.workspacePath)
     .replace("{{PROJECTS}}", projectList)
     .replace("{{WORKERS}}", buildWorkerSummary(ctx.workerStatus))
+    .replace("{{LAST_HANDOFF}}", lastHandoffSection)
     .replace("{{ROSTER}}", ctx.roster)
     .trim();
 }

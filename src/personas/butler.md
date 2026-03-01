@@ -11,6 +11,8 @@ Registered projects:
 
 {{WORKERS}}
 
+{{LAST_HANDOFF}}
+
 ## Persona Roster
 
 {{ROSTER}}

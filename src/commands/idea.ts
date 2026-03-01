@@ -1,11 +1,9 @@
+import { mkdir, writeFile } from "node:fs/promises";
+import { join } from "node:path";
 import { listProjects } from "../lib/projects.ts";
+import { checkClaudeInstalled, launchSession } from "../lib/session.ts";
 import { resolveWorkspace } from "../lib/workspace.ts";
 import { buildOraclePrompt } from "../personas/oracle.ts";
-
-function checkClaudeInstalled(): boolean {
-  const result = Bun.spawnSync(["which", "claude"]);
-  return result.exitCode === 0;
-}
 
 export async function runIdea(): Promise<void> {
   if (!checkClaudeInstalled()) {
@@ -26,10 +24,9 @@ export async function runIdea(): Promise<void> {
   const projects = await listProjects();
   const prompt = buildOraclePrompt({ workspacePath, projects });
 
-  const proc = Bun.spawn(["claude", "--append-system-prompt", prompt], {
-    cwd: workspacePath,
-    stdio: ["inherit", "inherit", "inherit"],
-  });
+  const domusDir = join(workspacePath, ".domus");
+  await mkdir(domusDir, { recursive: true });
+  await writeFile(join(domusDir, "last-persona"), "oracle", "utf-8");
 
-  await proc.exited;
+  await launchSession(prompt, workspacePath);
 }

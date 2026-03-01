@@ -1,4 +1,4 @@
-import { readdir } from "node:fs/promises";
+import { readFile, readdir } from "node:fs/promises";
 import { join } from "node:path";
 import { listProjects } from "../lib/projects.ts";
 import { checkClaudeInstalled, launchSession } from "../lib/session.ts";
@@ -12,6 +12,24 @@ type WorkerFile = {
   workerId: string;
   branch: string;
 };
+
+async function readLastHandoff(
+  workspacePath: string,
+): Promise<string | undefined> {
+  try {
+    const persona = await readFile(
+      join(workspacePath, ".domus", "last-persona"),
+      "utf-8",
+    );
+    const handoff = await readFile(
+      join(workspacePath, ".domus", "handoff", `${persona.trim()}.md`),
+      "utf-8",
+    );
+    return handoff.trim();
+  } catch {
+    return undefined;
+  }
+}
 
 async function readWorkerStatus(workspacePath: string) {
   const workersDir = join(workspacePath, ".domus", "workers");
@@ -59,10 +77,11 @@ export async function runWork(): Promise<void> {
     process.exit(1);
   }
 
-  const [projects, workerStatus, roster] = await Promise.all([
+  const [projects, workerStatus, roster, lastHandoff] = await Promise.all([
     listProjects(),
     readWorkerStatus(workspacePath),
     Bun.file(ROSTER_PATH).text(),
+    readLastHandoff(workspacePath),
   ]);
 
   const prompt = buildButlerPrompt({
@@ -70,6 +89,7 @@ export async function runWork(): Promise<void> {
     projects,
     workerStatus,
     roster,
+    lastHandoff,
   });
 
   await launchSession(prompt, workspacePath);
