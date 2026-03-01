@@ -1,20 +1,13 @@
 {
   "permissions": {
     "allow": [
-      "Bash(git:*)",
-      "Bash(bun:*)",
-      "Bash(bun run:*)",
-      "Bash(bun test:*)",
-      "Bash(bun install:*)",
-      "Bash(bunx:*)",
-      "Bash(mkdir:*)",
-      "Bash(touch:*)",
-      "Bash(rm:*)",
-      "Bash(echo:*)",
-      "Bash(printf:*)",
-      "Bash(cat:*)",
-      "Bash(cp:*)",
-      "Bash(mv:*)"
+      "Bash(git *)",
+      "Bash(bun *)",
+      "Read",
+      "Edit",
+      "Write",
+      "Glob",
+      "Grep"
     ]
   }
 }

@@ -123,7 +123,13 @@ export async function dispatchWorker(
 
   const { CLAUDECODE: _, ...workerEnv } = process.env;
   const proc = Bun.spawn(
-    ["claude", "--print", "--append-system-prompt", context, "Implement the task."],
+    [
+      "claude",
+      "--print",
+      "--append-system-prompt",
+      context,
+      "Implement the task.",
+    ],
     {
       cwd: worktreePath,
       env: workerEnv,
