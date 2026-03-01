@@ -1,5 +1,6 @@
 import { version } from "../package.json";
 import { runAdd } from "./commands/add.ts";
+import { runDispatch } from "./commands/dispatch.ts";
 import { runIdea } from "./commands/idea.ts";
 import { runInit } from "./commands/init.ts";
 import { runWork } from "./commands/work.ts";
@@ -8,13 +9,13 @@ const USAGE = `
 Domus — personal workflow and AI orchestration system
 
 Usage:
-  domus                     Connect to Butler session
-  domus work                Connect to Butler session
-  domus connect             Connect to Butler session
-  domus idea                Start Oracle ideation session
-  domus init                Initialise a Domus workspace
-  domus add project <path>  Register a project
-  domus foreman <cmd>       Manage the work queue
+  domus                          Connect to Butler session
+  domus work                     Connect to Butler session
+  domus connect                  Connect to Butler session
+  domus idea                     Start Oracle ideation session
+  domus init                     Initialise a Domus workspace
+  domus add project <path>       Register a project
+  domus dispatch <ticket-file>   Dispatch a worker for a ticket
 
 Options:
   --version, -v             Print version
@@ -54,9 +55,8 @@ async function main() {
       await runAdd(args.slice(1));
       break;
 
-    case "foreman":
-      console.error("Foreman not yet implemented.");
-      process.exit(1);
+    case "dispatch":
+      await runDispatch(args.slice(1));
       break;
 
     default:

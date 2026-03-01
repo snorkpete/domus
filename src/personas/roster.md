@@ -45,8 +45,8 @@ Butler's reference for routing decisions. Each entry describes who handles what,
 - **Room:** Workshop
 - **Role:** Implements work tickets autonomously; produces a feature branch with passing tests ready for review.
 - **Interactive:** No (background, non-interactive)
-- **Launch:** Dispatched by Butler *(not yet available)*
-- **Status:** Not yet available
+- **Launch:** `domus dispatch <ticket-file>` (call via Bash tool)
+- **Status:** Available
 - **Routing signals:** Not triggered directly by the human — Butler dispatches based on pending tickets.
 - **Handoff hints:** Output is a feature branch. Branch goes to the human (or Gatekeeper) for review and merge.
 
