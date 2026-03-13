@@ -30,7 +30,7 @@ beforeEach(async () => {
 afterEach(async () => {
   await rm(tempWorkspace, { recursive: true, force: true });
   await rm(tempConfigDir, { recursive: true, force: true });
-  process.env.DOMUS_CONFIG_DIR = undefined;
+  delete process.env.DOMUS_CONFIG_DIR;
 });
 
 test("listProjects returns empty array when no projects registered", async () => {

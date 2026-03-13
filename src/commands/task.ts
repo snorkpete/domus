@@ -1,6 +1,15 @@
 import { existsSync } from "node:fs";
-import { mkdir, readFile, unlink, writeFile } from "node:fs/promises";
-import { join, resolve } from "node:path";
+import { readFile, writeFile } from "node:fs/promises";
+import { join } from "node:path";
+import { parseFlag, hasFlag, toKebabCase, uniqueId } from "../lib/args.ts";
+import {
+  today,
+  projectRoot,
+  DOMUS_DIR,
+  readJsonl,
+  writeJsonl,
+  updateMarkdownStatus,
+} from "../lib/jsonl.ts";
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -27,18 +36,7 @@ type TaskEntry = {
   outcome_note: string | null;
 };
 
-// ── Helpers ──────────────────────────────────────────────────────────────────
-
-function today(): string {
-  return new Date().toISOString().slice(0, 10);
-}
-
-function projectRoot(): string {
-  return resolve(process.cwd());
-}
-
-// TODO: make DOMUS_DIR configurable (e.g. via env var or config) when needed
-const DOMUS_DIR = ".domus";
+// ── Store helpers ─────────────────────────────────────────────────────────────
 
 function tasksJsonlPath(root: string): string {
   return join(root, DOMUS_DIR, "tasks", "tasks.jsonl");
@@ -49,45 +47,11 @@ function tasksDir(root: string): string {
 }
 
 async function readTasks(root: string): Promise<TaskEntry[]> {
-  const path = tasksJsonlPath(root);
-  if (!existsSync(path)) return [];
-  const content = await readFile(path, "utf-8");
-  return content
-    .split("\n")
-    .filter((line) => line.trim().length > 0)
-    .map((line) => JSON.parse(line) as TaskEntry);
+  return readJsonl<TaskEntry>(tasksJsonlPath(root));
 }
 
 async function writeTasks(root: string, tasks: TaskEntry[]): Promise<void> {
-  const path = tasksJsonlPath(root);
-  await mkdir(tasksDir(root), { recursive: true });
-  const content = tasks.map((t) => JSON.stringify(t)).join("\n");
-  await writeFile(path, content.length > 0 ? content + "\n" : "", "utf-8");
-}
-
-function toKebabCase(title: string): string {
-  return title
-    .toLowerCase()
-    .replace(/[^\w\s-]/g, "")
-    .replace(/\s+/g, "-")
-    .replace(/-+/g, "-")
-    .replace(/^-|-$/g, "");
-}
-
-function uniqueId(base: string, existing: string[]): string {
-  if (!existing.includes(base)) return base;
-  let i = 2;
-  while (existing.includes(`${base}-${i}`)) i++;
-  return `${base}-${i}`;
-}
-
-function parseFlag(args: string[], flag: string): string | undefined {
-  const idx = args.indexOf(flag);
-  return idx !== -1 && idx + 1 < args.length ? args[idx + 1] : undefined;
-}
-
-function hasFlag(args: string[], flag: string): boolean {
-  return args.includes(flag);
+  return writeJsonl(tasksJsonlPath(root), tasksDir(root), tasks);
 }
 
 // ── Computed queries ─────────────────────────────────────────────────────────
@@ -205,15 +169,6 @@ _Remove if empty._
   console.log(`Task created: ${id}`);
   console.log(`  Title:  ${title}`);
   console.log(`  File:   ${file}`);
-}
-
-async function updateMarkdownStatus(filePath: string, newStatus: string): Promise<void> {
-  if (!existsSync(filePath)) return;
-  const content = await readFile(filePath, "utf-8");
-  const updated = content.replace(/^\*\*Status:\*\* .+$/m, `**Status:** ${newStatus}`);
-  if (updated !== content) {
-    await writeFile(filePath, updated, "utf-8");
-  }
 }
 
 async function cmdStatus(args: string[]): Promise<void> {

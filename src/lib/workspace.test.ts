@@ -17,7 +17,7 @@ beforeEach(async () => {
 
 afterEach(async () => {
   await rm(tempConfigDir, { recursive: true, force: true });
-  process.env.DOMUS_CONFIG_DIR = undefined;
+  delete process.env.DOMUS_CONFIG_DIR;
 });
 
 test("resolveWorkspace throws when no config exists", async () => {

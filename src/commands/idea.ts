@@ -1,6 +1,15 @@
 import { existsSync } from "node:fs";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
-import { join, resolve } from "node:path";
+import { join } from "node:path";
+import { parseFlag, hasFlag, toKebabCase, uniqueId } from "../lib/args.ts";
+import {
+  today,
+  projectRoot,
+  DOMUS_DIR,
+  readJsonl,
+  writeJsonl,
+  updateMarkdownStatus,
+} from "../lib/jsonl.ts";
 import { listProjects } from "../lib/projects.ts";
 import { checkClaudeInstalled, launchSession } from "../lib/session.ts";
 import { resolveWorkspace } from "../lib/workspace.ts";
@@ -29,17 +38,7 @@ type IdeaEntry = {
   outcome_note: string | null;
 };
 
-// ── Helpers ──────────────────────────────────────────────────────────────────
-
-function today(): string {
-  return new Date().toISOString().slice(0, 10);
-}
-
-function projectRoot(): string {
-  return resolve(process.cwd());
-}
-
-const DOMUS_DIR = ".domus";
+// ── Store helpers ─────────────────────────────────────────────────────────────
 
 function ideasJsonlPath(root: string): string {
   return join(root, DOMUS_DIR, "ideas", "ideas.jsonl");
@@ -50,45 +49,11 @@ function ideasDir(root: string): string {
 }
 
 async function readIdeas(root: string): Promise<IdeaEntry[]> {
-  const path = ideasJsonlPath(root);
-  if (!existsSync(path)) return [];
-  const content = await readFile(path, "utf-8");
-  return content
-    .split("\n")
-    .filter((line) => line.trim().length > 0)
-    .map((line) => JSON.parse(line) as IdeaEntry);
+  return readJsonl<IdeaEntry>(ideasJsonlPath(root));
 }
 
 async function writeIdeas(root: string, ideas: IdeaEntry[]): Promise<void> {
-  const path = ideasJsonlPath(root);
-  await mkdir(ideasDir(root), { recursive: true });
-  const content = ideas.map((i) => JSON.stringify(i)).join("\n");
-  await writeFile(path, content.length > 0 ? content + "\n" : "", "utf-8");
-}
-
-function toKebabCase(title: string): string {
-  return title
-    .toLowerCase()
-    .replace(/[^\w\s-]/g, "")
-    .replace(/\s+/g, "-")
-    .replace(/-+/g, "-")
-    .replace(/^-|-$/g, "");
-}
-
-function uniqueId(base: string, existing: string[]): string {
-  if (!existing.includes(base)) return base;
-  let i = 2;
-  while (existing.includes(`${base}-${i}`)) i++;
-  return `${base}-${i}`;
-}
-
-function parseFlag(args: string[], flag: string): string | undefined {
-  const idx = args.indexOf(flag);
-  return idx !== -1 && idx + 1 < args.length ? args[idx + 1] : undefined;
-}
-
-function hasFlag(args: string[], flag: string): boolean {
-  return args.includes(flag);
+  return writeJsonl(ideasJsonlPath(root), ideasDir(root), ideas);
 }
 
 // ── Subcommands ──────────────────────────────────────────────────────────────
@@ -127,7 +92,7 @@ async function cmdAdd(args: string[]): Promise<void> {
     status,
     tags,
     summary,
-    date_status_changed: null,
+    date_status_changed: dateToday,
     date_implemented: null,
     outcome_note: null,
   };
@@ -163,15 +128,6 @@ _To be filled in._
 
   await writeFile(detailPath, detailContent, "utf-8");
   console.log(id);
-}
-
-async function updateMarkdownStatus(filePath: string, newStatus: string): Promise<void> {
-  if (!existsSync(filePath)) return;
-  const content = await readFile(filePath, "utf-8");
-  const updated = content.replace(/^\*\*Status:\*\* .+$/m, `**Status:** ${newStatus}`);
-  if (updated !== content) {
-    await writeFile(filePath, updated, "utf-8");
-  }
 }
 
 async function cmdStatus(args: string[]): Promise<void> {
@@ -418,9 +374,7 @@ async function cmdUpdate(args: string[]): Promise<void> {
 }
 
 async function cmdRefine(args: string[]): Promise<void> {
-  const contextFlagIndex = args.indexOf("--context");
-  const context =
-    contextFlagIndex !== -1 ? args[contextFlagIndex + 1] : undefined;
+  const context = parseFlag(args, "--context");
 
   if (!checkClaudeInstalled()) {
     console.error(
