@@ -4,6 +4,7 @@ import { runAdd } from "./commands/add.ts";
 import { runDispatch } from "./commands/dispatch.ts";
 import { runIdea } from "./commands/idea.ts";
 import { runInit } from "./commands/init.ts";
+import { runTask } from "./commands/task.ts";
 import { runWork } from "./commands/work.ts";
 
 const USAGE = `
@@ -13,10 +14,11 @@ Usage:
   domus                          Connect to Butler session
   domus work                     Connect to Butler session
   domus connect                  Connect to Butler session
-  domus idea                     Start Oracle ideation session
+  domus idea                     Manage ideas (domus idea --help)
   domus init                     Initialise a Domus workspace
   domus add project <path>       Register a project
   domus dispatch <ticket-file>   Dispatch a worker for a ticket
+  domus task <subcommand>        Manage project tasks
 
 Options:
   --version, -v             Print version
@@ -58,6 +60,10 @@ async function main() {
 
     case "dispatch":
       await runDispatch(args.slice(1));
+      break;
+
+    case "task":
+      await runTask(args.slice(1));
       break;
 
     default:
