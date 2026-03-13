@@ -87,6 +87,10 @@ function parseFlag(args: string[], flag: string): string | undefined {
   return idx !== -1 && idx + 1 < args.length ? args[idx + 1] : undefined;
 }
 
+function hasFlag(args: string[], flag: string): boolean {
+  return args.includes(flag);
+}
+
 // ── Subcommands ──────────────────────────────────────────────────────────────
 
 async function cmdAdd(args: string[]): Promise<void> {
@@ -322,6 +326,11 @@ async function cmdList(args: string[]): Promise<void> {
     ? ideas.filter((i) => i.status === filterStatus)
     : ideas;
 
+  if (hasFlag(args, "--json")) {
+    console.log(JSON.stringify(filtered, null, 2));
+    return;
+  }
+
   const statusIcon: Record<IdeaStatus, string> = {
     raw: "○",
     refined: "◑",
@@ -335,6 +344,77 @@ async function cmdList(args: string[]): Promise<void> {
     const icon = statusIcon[i.status] ?? "?";
     console.log(`${icon} ${i.id} — ${i.title}`);
   });
+}
+
+async function cmdShow(args: string[]): Promise<void> {
+  const root = projectRoot();
+  const [id] = args;
+
+  if (!id) {
+    console.error("Usage: domus idea show <id>");
+    process.exit(1);
+  }
+
+  const ideas = await readIdeas(root);
+  const idea = ideas.find((i) => i.id === id);
+
+  if (!idea) {
+    console.error(`Idea not found: ${id}`);
+    process.exit(1);
+  }
+
+  console.log(`# ${idea.title}`);
+  console.log();
+  console.log(`ID:        ${idea.id}`);
+  console.log(`Status:    ${idea.status}`);
+  console.log(`Captured:  ${idea.date_captured ?? "unknown"}`);
+  console.log(`Tags:      ${idea.tags.length > 0 ? idea.tags.join(", ") : "none"}`);
+  console.log(`Summary:   ${idea.summary || "(none)"}`);
+  if (idea.outcome_note) console.log(`Outcome:   ${idea.outcome_note}`);
+  if (idea.date_implemented) console.log(`Implemented: ${idea.date_implemented}`);
+}
+
+async function cmdUpdate(args: string[]): Promise<void> {
+  const root = projectRoot();
+  const [id] = args;
+
+  if (!id) {
+    console.error("Usage: domus idea update <id> [--title <title>] [--summary <text>] [--tags <tag1,tag2>]");
+    process.exit(1);
+  }
+
+  const ideas = await readIdeas(root);
+  const idea = ideas.find((i) => i.id === id);
+
+  if (!idea) {
+    console.error(`Idea not found: ${id}`);
+    process.exit(1);
+  }
+
+  const newTitle = parseFlag(args, "--title");
+  const newSummary = parseFlag(args, "--summary");
+  const newTags = parseFlag(args, "--tags")?.split(",").map((t) => t.trim()).filter(Boolean);
+
+  if (!newTitle && !newSummary && !newTags) {
+    console.error("Nothing to update. Provide at least one flag.");
+    process.exit(1);
+  }
+
+  if (newTitle) idea.title = newTitle;
+  if (newSummary) idea.summary = newSummary;
+  if (newTags) idea.tags = newTags;
+
+  await writeIdeas(root, ideas);
+
+  // Sync .md file for fields that appear in the header
+  const filePath = join(root, idea.file);
+  if (newTitle && existsSync(filePath)) {
+    const content = await readFile(filePath, "utf-8");
+    const updated = content.replace(/^# Idea: .+$/m, `# Idea: ${newTitle}`);
+    await writeFile(filePath, updated, "utf-8");
+  }
+
+  console.log(`Idea ${id} updated.`);
 }
 
 async function cmdRefine(args: string[]): Promise<void> {
@@ -375,15 +455,19 @@ domus idea — idea management
 Usage:
   domus idea add --title <title> [options]
   domus idea status <id> <new-status> [--note <text>]
+  domus idea update <id> [--title <title>] [--summary <text>] [--tags <tag1,tag2>]
+  domus idea show <id>
   domus idea overview [--filter <filter>]
-  domus idea list [--status <status>]
+  domus idea list [--status <status>] [--json]
   domus idea refine [--context <text>]
 
 Subcommands:
   add       Create a new idea (writes to .domus/ideas/)
   status    Update idea status
+  update    Update metadata fields (title, summary, tags)
+  show      Print full detail for a single idea
   overview  Show active ideas grouped by status (default filter: active)
-  list      List all ideas (flat)
+  list      List all ideas (flat, --json for machine-readable output)
   refine    Launch Oracle ideation session
 
 Filters for overview:
@@ -399,6 +483,12 @@ export async function runIdea(args: string[] = []): Promise<void> {
       break;
     case "status":
       await cmdStatus(args.slice(1));
+      break;
+    case "update":
+      await cmdUpdate(args.slice(1));
+      break;
+    case "show":
+      await cmdShow(args.slice(1));
       break;
     case "overview":
       await cmdOverview(args.slice(1));

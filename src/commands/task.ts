@@ -356,6 +356,11 @@ async function cmdList(args: string[]): Promise<void> {
     ? tasks.filter((t) => t.status === filterStatus)
     : tasks;
 
+  if (hasFlag(args, "--json")) {
+    console.log(JSON.stringify(filtered, null, 2));
+    return;
+  }
+
   const statusIcon: Record<TaskStatus, string> = {
     open: "○",
     "in-progress": "◑",
@@ -370,6 +375,87 @@ async function cmdList(args: string[]): Promise<void> {
   });
 }
 
+async function cmdShow(args: string[]): Promise<void> {
+  const root = projectRoot();
+  const [id] = args;
+
+  if (!id) {
+    console.error("Usage: domus task show <id>");
+    process.exit(1);
+  }
+
+  const tasks = await readTasks(root);
+  const task = tasks.find((t) => t.id === id);
+
+  if (!task) {
+    console.error(`Task not found: ${id}`);
+    process.exit(1);
+  }
+
+  console.log(`# ${task.title}`);
+  console.log();
+  console.log(`ID:          ${task.id}`);
+  console.log(`Status:      ${task.status}`);
+  console.log(`Refinement:  ${task.refinement}`);
+  console.log(`Priority:    ${task.priority}`);
+  console.log(`Captured:    ${task.date_captured}`);
+  console.log(`Parent:      ${task.parent_id ?? "none"}`);
+  console.log(`Depends on:  ${task.depends_on.length > 0 ? task.depends_on.join(", ") : "none"}`);
+  console.log(`Idea:        ${task.idea_id ?? "none"}`);
+  console.log(`Tags:        ${task.tags.length > 0 ? task.tags.join(", ") : "none"}`);
+  console.log(`Summary:     ${task.summary || "(none)"}`);
+  if (task.outcome_note) console.log(`Outcome:     ${task.outcome_note}`);
+}
+
+async function cmdUpdate(args: string[]): Promise<void> {
+  const root = projectRoot();
+  const [id] = args;
+
+  if (!id) {
+    console.error("Usage: domus task update <id> [--title <title>] [--summary <text>] [--tags <tag1,tag2>] [--priority <priority>] [--refinement <refinement>]");
+    process.exit(1);
+  }
+
+  const tasks = await readTasks(root);
+  const task = tasks.find((t) => t.id === id);
+
+  if (!task) {
+    console.error(`Task not found: ${id}`);
+    process.exit(1);
+  }
+
+  const newTitle = parseFlag(args, "--title");
+  const newSummary = parseFlag(args, "--summary");
+  const newTags = parseFlag(args, "--tags")?.split(",").map((t) => t.trim()).filter(Boolean);
+  const newPriority = parseFlag(args, "--priority") as TaskPriority | undefined;
+  const newRefinement = parseFlag(args, "--refinement") as TaskRefinement | undefined;
+
+  if (!newTitle && !newSummary && !newTags && !newPriority && !newRefinement) {
+    console.error("Nothing to update. Provide at least one flag.");
+    process.exit(1);
+  }
+
+  if (newTitle) task.title = newTitle;
+  if (newSummary) task.summary = newSummary;
+  if (newTags) task.tags = newTags;
+  if (newPriority) task.priority = newPriority;
+  if (newRefinement) task.refinement = newRefinement;
+
+  await writeTasks(root, tasks);
+
+  // Sync .md file for fields that appear in the header
+  const filePath = join(root, task.file);
+  if (existsSync(filePath)) {
+    let content = await readFile(filePath, "utf-8");
+    if (newTitle) content = content.replace(/^# Task: .+$/m, `# Task: ${newTitle}`);
+    if (newPriority) content = content.replace(/^\*\*Priority:\*\* .+$/m, `**Priority:** ${newPriority}`);
+    if (newRefinement) content = content.replace(/^\*\*Refinement:\*\* .+$/m, `**Refinement:** ${newRefinement}`);
+    await writeFile(filePath, content, "utf-8");
+  }
+
+  console.log(`Task ${id} updated.`);
+}
+
 // ── Entry point ──────────────────────────────────────────────────────────────
 
 const TASK_USAGE = `
@@ -378,14 +464,18 @@ domus task — task management
 Usage:
   domus task add --title <title> [options]
   domus task status <id> <new-status> [--note <text>]
+  domus task update <id> [--title <title>] [--summary <text>] [--tags <tag1,tag2>] [--priority <priority>] [--refinement <refinement>]
+  domus task show <id>
   domus task ready
-  domus task list [--status <status>]
+  domus task list [--status <status>] [--json]
 
 Subcommands:
   add       Create a new task (writes to .domus/tasks/)
   status    Update task status
+  update    Update metadata fields (title, summary, tags, priority, refinement)
+  show      Print full detail for a single task
   ready     Show what's ready to work on (grouped by readiness)
-  list      List all tasks
+  list      List all tasks (--json for machine-readable output)
 `.trim();
 
 export async function runTask(args: string[]): Promise<void> {
@@ -397,6 +487,12 @@ export async function runTask(args: string[]): Promise<void> {
       break;
     case "status":
       await cmdStatus(args.slice(1));
+      break;
+    case "update":
+      await cmdUpdate(args.slice(1));
+      break;
+    case "show":
+      await cmdShow(args.slice(1));
       break;
     case "ready":
       await cmdReady(args.slice(1));
