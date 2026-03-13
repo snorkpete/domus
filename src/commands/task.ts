@@ -1,7 +1,7 @@
 import { existsSync } from "node:fs";
 import { readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
-import { parseFlag, hasFlag, toKebabCase, uniqueId } from "../lib/args.ts";
+import { parseFlag, hasFlag, toKebabCase, uniqueId, validateEnum } from "../lib/args.ts";
 import {
   today,
   projectRoot,
@@ -92,8 +92,10 @@ async function cmdAdd(args: string[]): Promise<void> {
     ?.split(",")
     .map((t) => t.trim())
     .filter(Boolean) ?? [];
-  const priority = (parseFlag(args, "--priority") ?? "normal") as TaskPriority;
-  const refinement = (parseFlag(args, "--refinement") ?? "raw") as TaskRefinement;
+  const validPriorities: TaskPriority[] = ["high", "normal", "low"];
+  const validRefinements: TaskRefinement[] = ["raw", "refined", "autonomous"];
+  const priority = validateEnum(parseFlag(args, "--priority") ?? "normal", validPriorities, "priority");
+  const refinement = validateEnum(parseFlag(args, "--refinement") ?? "raw", validRefinements, "refinement");
   const parentId = parseFlag(args, "--parent") ?? null;
   const dependsOn =
     parseFlag(args, "--depends-on")

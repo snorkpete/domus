@@ -1,7 +1,7 @@
 import { existsSync } from "node:fs";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
-import { parseFlag, hasFlag, toKebabCase, uniqueId } from "../lib/args.ts";
+import { parseFlag, hasFlag, toKebabCase, uniqueId, validateEnum } from "../lib/args.ts";
 import {
   today,
   projectRoot,
@@ -75,7 +75,8 @@ async function cmdAdd(args: string[]): Promise<void> {
       ?.split(",")
       .map((t) => t.trim())
       .filter(Boolean) ?? [];
-  const status = (parseFlag(args, "--status") ?? "raw") as IdeaStatus;
+  const validStatuses: IdeaStatus[] = ["raw", "refined", "scoped", "implemented", "abandoned", "deferred"];
+  const status = validateEnum(parseFlag(args, "--status") ?? "raw", validStatuses, "status");
 
   const ideas = await readIdeas(root);
   const existingIds = ideas.map((i) => i.id);

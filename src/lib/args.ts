@@ -24,3 +24,13 @@ export function uniqueId(base: string, existing: string[]): string {
   while (existing.includes(`${base}-${i}`)) i++;
   return `${base}-${i}`;
 }
+
+export function validateEnum<T extends string>(
+  value: string,
+  valid: T[],
+  label: string,
+): T {
+  if (valid.includes(value as T)) return value as T;
+  console.error(`Invalid ${label}: ${value}. Must be one of: ${valid.join(", ")}`);
+  process.exit(1);
+}

@@ -104,6 +104,16 @@ test("add: exits without --title", async () => {
   expect(trap.didExit()).toBe(true);
 });
 
+test("add: exits on invalid --status value", async () => {
+  const trap = trapExit();
+  try {
+    await runIdea(["add", "--title", "My Idea", "--status", "bogus"]);
+  } catch { /* expected */ } finally {
+    trap.restore();
+  }
+  expect(trap.didExit()).toBe(true);
+});
+
 // ── status ────────────────────────────────────────────────────────────────────
 
 test("status: updates status in JSONL and .md file", async () => {

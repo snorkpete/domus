@@ -109,6 +109,26 @@ test("add: exits without --title", async () => {
   expect(trap.didExit()).toBe(true);
 });
 
+test("add: exits on invalid --priority value", async () => {
+  const trap = trapExit();
+  try {
+    await runTask(["add", "--title", "My Task", "--priority", "bogus"]);
+  } catch { /* expected */ } finally {
+    trap.restore();
+  }
+  expect(trap.didExit()).toBe(true);
+});
+
+test("add: exits on invalid --refinement value", async () => {
+  const trap = trapExit();
+  try {
+    await runTask(["add", "--title", "My Task", "--refinement", "bogus"]);
+  } catch { /* expected */ } finally {
+    trap.restore();
+  }
+  expect(trap.didExit()).toBe(true);
+});
+
 // ── status ────────────────────────────────────────────────────────────────────
 
 test("status: updates status in JSONL and .md file", async () => {
