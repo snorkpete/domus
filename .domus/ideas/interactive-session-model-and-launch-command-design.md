@@ -1,6 +1,6 @@
 # Idea: Interactive session model and launch command design
 
-**Date:** 2026-03-14
+**Captured:** 2026-03-14
 **Status:** raw
 
 ---

@@ -1,6 +1,6 @@
 # Idea: Subagent Strategy for Domus Workflow
 
-**Date:** 2026-03-14
+**Captured:** 2026-03-14
 **Status:** raw
 
 ---

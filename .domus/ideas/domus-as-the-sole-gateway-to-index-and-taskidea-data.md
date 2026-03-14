@@ -1,6 +1,6 @@
 # Idea: Domus as the sole gateway to index and task/idea data
 
-**Date:** 2026-03-14
+**Captured:** 2026-03-14
 **Status:** raw
 
 ---

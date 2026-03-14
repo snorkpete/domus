@@ -1,6 +1,6 @@
 # Idea: Plans and autonomous tasks are the same artifact
 
-**Date:** 2026-03-14
+**Captured:** 2026-03-14
 **Status:** raw
 
 ---

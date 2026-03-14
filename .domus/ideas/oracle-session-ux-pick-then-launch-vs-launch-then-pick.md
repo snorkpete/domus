@@ -1,6 +1,6 @@
 # Idea: Oracle session UX: pick-then-launch vs launch-then-pick
 
-**Date:** 2026-03-14
+**Captured:** 2026-03-14
 **Status:** raw
 
 ---

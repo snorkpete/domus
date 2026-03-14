@@ -105,7 +105,7 @@ async function cmdAdd(args: string[]): Promise<void> {
   const detailPath = join(root, file);
   const detailContent = `# Idea: ${title}
 
-**Date:** ${dateToday}
+**Captured:** ${dateToday}
 **Status:** ${status}
 
 ---

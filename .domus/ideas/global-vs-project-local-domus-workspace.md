@@ -1,6 +1,6 @@
 # Idea: Global vs project-local domus workspace
 
-**Date:** 2026-03-14
+**Captured:** 2026-03-14
 **Status:** deferred
 
 ---

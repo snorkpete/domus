@@ -49,5 +49,14 @@ export async function updateMarkdownStatus(
   );
   if (updated !== content) {
     await writeFile(filePath, updated, "utf-8");
+    return;
+  }
+  // No **Status:** line present — insert one after the title line
+  const withInserted = content.replace(
+    /^(# .+\n)/m,
+    `$1\n**Status:** ${newStatus}`,
+  );
+  if (withInserted !== content) {
+    await writeFile(filePath, withInserted, "utf-8");
   }
 }
