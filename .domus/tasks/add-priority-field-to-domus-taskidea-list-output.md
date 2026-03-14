@@ -1,7 +1,7 @@
 # Task: Add priority field to domus task/idea list output
 
 **ID:** add-priority-field-to-domus-taskidea-list-output
-**Status:** open
+**Status:** done
 **Refinement:** autonomous
 **Priority:** normal
 **Captured:** 2026-03-14
