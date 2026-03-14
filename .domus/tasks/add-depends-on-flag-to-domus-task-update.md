@@ -1,7 +1,7 @@
 # Task: Add --depends-on flag to domus task update
 
 **ID:** add-depends-on-flag-to-domus-task-update
-**Status:** in-progress
+**Status:** done
 **Refinement:** autonomous
 **Priority:** normal
 **Captured:** 2026-03-14
