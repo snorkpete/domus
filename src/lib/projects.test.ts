@@ -1,12 +1,12 @@
 import { afterEach, beforeEach, expect, test } from "bun:test";
 import { existsSync } from "node:fs";
-import { mkdtemp, rm, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { listProjects, registerProject, resolveProject } from "./projects.ts";
 
 let tempWorkspace: string;
-let tempConfigDir: string;
+let originalCwd: string;
 
 const PROJECTS_MD_HEADER = `# Projects
 
@@ -17,20 +17,16 @@ const PROJECTS_MD_HEADER = `# Projects
 `;
 
 beforeEach(async () => {
+  originalCwd = process.cwd();
   tempWorkspace = await mkdtemp(join(tmpdir(), "domus-workspace-"));
-  tempConfigDir = await mkdtemp(join(tmpdir(), "domus-config-"));
-  process.env.DOMUS_CONFIG_DIR = tempConfigDir;
-  await Bun.write(
-    join(tempConfigDir, "config.json"),
-    JSON.stringify({ workspace: tempWorkspace }),
-  );
+  await mkdir(join(tempWorkspace, ".domus"), { recursive: true });
+  process.chdir(tempWorkspace);
   await writeFile(join(tempWorkspace, "projects.md"), PROJECTS_MD_HEADER);
 });
 
 afterEach(async () => {
+  process.chdir(originalCwd);
   await rm(tempWorkspace, { recursive: true, force: true });
-  await rm(tempConfigDir, { recursive: true, force: true });
-  delete process.env.DOMUS_CONFIG_DIR;
 });
 
 test("listProjects returns empty array when no projects registered", async () => {

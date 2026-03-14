@@ -1,48 +1,29 @@
 import { afterEach, beforeEach, expect, test } from "bun:test";
-import { mkdtemp, rm } from "node:fs/promises";
+import { mkdir, mkdtemp, rm, realpath } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import {
-  readWorkspaceConfig,
-  resolveWorkspace,
-  writeWorkspaceConfig,
-} from "./workspace.ts";
+import { resolveWorkspace } from "./workspace.ts";
 
-let tempConfigDir: string;
+let tempDir: string;
+let originalCwd: string;
 
 beforeEach(async () => {
-  tempConfigDir = await mkdtemp(join(tmpdir(), "domus-config-"));
-  process.env.DOMUS_CONFIG_DIR = tempConfigDir;
+  originalCwd = process.cwd();
+  tempDir = await mkdtemp(join(tmpdir(), "domus-workspace-"));
+  process.chdir(tempDir);
 });
 
 afterEach(async () => {
-  await rm(tempConfigDir, { recursive: true, force: true });
-  delete process.env.DOMUS_CONFIG_DIR;
+  process.chdir(originalCwd);
+  await rm(tempDir, { recursive: true, force: true });
 });
 
-test("resolveWorkspace throws when no config exists", async () => {
+test("resolveWorkspace throws when no .domus/ in cwd", async () => {
   await expect(resolveWorkspace()).rejects.toThrow("domus init");
 });
 
-test("resolveWorkspace returns workspace path after write", async () => {
-  await writeWorkspaceConfig("/some/workspace");
-  expect(await resolveWorkspace()).toBe("/some/workspace");
-});
-
-test("readWorkspaceConfig returns null when no config exists", async () => {
-  expect(await readWorkspaceConfig()).toBeNull();
-});
-
-test("writeWorkspaceConfig writes valid JSON and is readable", async () => {
-  await writeWorkspaceConfig("/my/workspace");
-  const config = await readWorkspaceConfig();
-  expect(config?.workspace).toBe("/my/workspace");
-});
-
-test("writeWorkspaceConfig creates config directory if missing", async () => {
-  const nestedDir = join(tempConfigDir, "nested", "domus");
-  process.env.DOMUS_CONFIG_DIR = nestedDir;
-  await writeWorkspaceConfig("/some/path");
-  const config = await readWorkspaceConfig();
-  expect(config?.workspace).toBe("/some/path");
+test("resolveWorkspace returns cwd when .domus/ exists", async () => {
+  await mkdir(join(tempDir, ".domus"), { recursive: true });
+  const realTempDir = await realpath(tempDir);
+  expect(await resolveWorkspace()).toBe(realTempDir);
 });

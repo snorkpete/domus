@@ -1,106 +1,126 @@
 import { existsSync } from "node:fs";
-import { mkdir } from "node:fs/promises";
-import { resolve } from "node:path";
-import { createInterface } from "node:readline";
-import { readWorkspaceConfig, writeWorkspaceConfig } from "../lib/workspace.ts";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { join, resolve } from "node:path";
 
-const WORKSPACE_DIRS = [
-  "projects",
-  "worktrees",
-  "store/global/ideas",
-  "store/global/tasks",
-  "store/global/decisions",
-  ".domus/workers",
-  ".domus/logs",
+const DOMUS_DIRS = [
+  ".domus/ideas",
+  ".domus/tasks",
+  ".domus/specs",
+  ".domus/tags",
 ];
 
-const PROJECTS_MD = `# Projects
+const SEED_FILES: Record<string, string> = {
+  ".domus/tags/shared.md": `# Shared Tag Vocabulary
 
-<!-- Managed by Domus. Edit with care — this is the project registry. -->
+Controlled tag list valid for all entity types (ideas, tasks, etc.). Only use tags from this list.
+To add a new tag, add it here first, then use it.
 
-| Name | Path | Added |
-|------|------|-------|
-`;
+\`backend\`, \`frontend\`, \`infrastructure\`, \`devex\`, \`database\`, \`security\`, \`product\`
+`,
+  ".domus/tags/ideas.md": `# Idea-Specific Tags
 
-const GITIGNORE = `projects/
-worktrees/
-.domus/
-`;
+Tags valid only for ideas (in addition to shared tags). Currently empty.
+`,
+  ".domus/tags/tasks.md": `# Task-Specific Tags
 
-const CLAUDE_SETTINGS = JSON.stringify(
-  {
-    permissions: {
-      allow: [
-        "Bash(git *)",
-        "Bash(git -C *)",
-        "Bash(cd * && git *)",
-        "Bash(bun *)",
-        "Read",
-        "Edit",
-        "Write",
-        "Glob",
-        "Grep",
-      ],
-    },
-  },
-  null,
-  2,
-);
+Tags valid only for tasks (in addition to shared tags). Currently empty.
+`,
+  ".domus/ideas/ideas.jsonl": "",
+  ".domus/tasks/tasks.jsonl": "",
+};
 
-async function confirm(message: string): Promise<boolean> {
-  const rl = createInterface({ input: process.stdin, output: process.stdout });
-  return new Promise((resolve) => {
-    rl.question(`${message} [y/N] `, (answer) => {
-      rl.close();
-      resolve(answer.trim().toLowerCase() === "y");
-    });
-  });
-}
+const REQUIRED_PERMISSIONS = [
+  "Bash(git *)",
+  "Bash(git -C *)",
+  "Bash(cd * && git *)",
+  "Bash(bun *)",
+  "Read",
+  "Edit",
+  "Write",
+  "Glob",
+  "Grep",
+];
+
+type Settings = {
+  permissions?: { allow?: string[] };
+  env?: Record<string, string | undefined>;
+  [key: string]: unknown;
+};
 
 type InitOptions = {
-  workspacePath?: string;
-  confirmFn?: (message: string) => Promise<boolean>;
+  projectPath?: string;
 };
 
 export async function runInit(
-  args: string[],
+  _args: string[],
   options: InitOptions = {},
 ): Promise<void> {
-  const force = args.includes("--force");
-  const workspacePath = options.workspacePath ?? resolve(process.cwd());
-  const confirmFn = options.confirmFn ?? confirm;
+  const projectPath = options.projectPath ?? resolve(process.cwd());
+  const created: string[] = [];
+  const skipped: string[] = [];
 
-  if (existsSync(`${workspacePath}/.domus`)) {
-    await writeWorkspaceConfig(workspacePath);
-    console.log("This directory is already a Domus workspace.");
-    return;
-  }
-
-  const existingConfig = await readWorkspaceConfig();
-  if (existingConfig && existingConfig.workspace !== workspacePath) {
-    if (!force) {
-      const ok = await confirmFn(
-        `A Domus workspace already exists at: ${existingConfig.workspace}\nOverwrite?`,
-      );
-      if (!ok) {
-        console.log("Aborted. Pass --force to override without prompting.");
-        return;
-      }
+  // Create missing directories
+  for (const dir of DOMUS_DIRS) {
+    const fullPath = join(projectPath, dir);
+    if (!existsSync(fullPath)) {
+      await mkdir(fullPath, { recursive: true });
+      created.push(`${dir}/`);
+    } else {
+      skipped.push(`${dir}/`);
     }
   }
 
-  for (const dir of WORKSPACE_DIRS) {
-    await mkdir(`${workspacePath}/${dir}`, { recursive: true });
+  // Create missing seed files
+  for (const [relPath, content] of Object.entries(SEED_FILES)) {
+    const fullPath = join(projectPath, relPath);
+    if (!existsSync(fullPath)) {
+      await writeFile(fullPath, content, "utf-8");
+      created.push(relPath);
+    } else {
+      skipped.push(relPath);
+    }
   }
 
-  await mkdir(`${workspacePath}/.claude`, { recursive: true });
-  await Bun.write(`${workspacePath}/projects.md`, PROJECTS_MD);
-  await Bun.write(`${workspacePath}/.gitignore`, GITIGNORE);
-  await Bun.write(
-    `${workspacePath}/.claude/settings.json`,
-    `${CLAUDE_SETTINGS}\n`,
-  );
-  await writeWorkspaceConfig(workspacePath);
+  // Merge .claude/settings.json
+  const claudeDir = join(projectPath, ".claude");
+  const settingsPath = join(claudeDir, "settings.json");
+  await mkdir(claudeDir, { recursive: true });
 
-  console.log(`Domus workspace initialised at: ${workspacePath}`);
+  let settings: Settings = {};
+  let settingsExisted = false;
+  if (existsSync(settingsPath)) {
+    const raw = await readFile(settingsPath, "utf-8");
+    try {
+      settings = JSON.parse(raw) as Settings;
+    } catch {
+      throw new Error(
+        `.claude/settings.json contains invalid JSON. Fix or delete it and re-run domus init.`,
+      );
+    }
+    settingsExisted = true;
+  }
+
+  const envPath = process.env.PATH;
+  if (envPath === undefined) {
+    throw new Error("process.env.PATH is not set — cannot configure Claude settings.");
+  }
+
+  const existingAllow = settings.permissions?.allow ?? [];
+  const mergedAllow = [...new Set([...existingAllow, ...REQUIRED_PERMISSIONS])];
+  settings.permissions = { ...settings.permissions, allow: mergedAllow };
+  settings.env = { ...settings.env, PATH: envPath };
+
+  await writeFile(settingsPath, `${JSON.stringify(settings, null, 2)}\n`, "utf-8");
+
+  // Report
+  if (created.length > 0) {
+    console.log("Created:");
+    for (const f of created) console.log(`  + ${f}`);
+  }
+  if (skipped.length > 0) {
+    console.log("Already exists (skipped):");
+    for (const f of skipped) console.log(`  · ${f}`);
+  }
+  const settingsVerb = settingsExisted ? "updated" : "created";
+  console.log(`  + .claude/settings.json ${settingsVerb} (permissions + PATH)`);
 }

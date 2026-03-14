@@ -1,45 +1,13 @@
-import { mkdir } from "node:fs/promises";
-import { homedir } from "node:os";
-import { join } from "node:path";
-
-type DomusConfig = {
-  workspace: string;
-};
-
-function getConfigDir(): string {
-  return process.env.DOMUS_CONFIG_DIR ?? join(homedir(), ".config", "domus");
-}
-
-function getConfigPath(): string {
-  return join(getConfigDir(), "config.json");
-}
+import { existsSync } from "node:fs";
+import { realpath } from "node:fs/promises";
+import { join, resolve } from "node:path";
 
 export async function resolveWorkspace(): Promise<string> {
-  const file = Bun.file(getConfigPath());
-  if (!(await file.exists())) {
+  const cwd = resolve(process.cwd());
+  if (!existsSync(join(cwd, ".domus"))) {
     throw new Error(
-      "No Domus workspace configured. Run `domus init` in your workspace directory.",
+      "No .domus/ directory found in current directory. Run `domus init` to initialise a workspace.",
     );
   }
-  const config: DomusConfig = await file.json();
-  if (!config.workspace) {
-    throw new Error(
-      "Domus config is malformed. Run `domus init` to reinitialise.",
-    );
-  }
-  return config.workspace;
-}
-
-export async function readWorkspaceConfig(): Promise<DomusConfig | null> {
-  const file = Bun.file(getConfigPath());
-  if (!(await file.exists())) return null;
-  return file.json();
-}
-
-export async function writeWorkspaceConfig(
-  workspacePath: string,
-): Promise<void> {
-  await mkdir(getConfigDir(), { recursive: true });
-  const config: DomusConfig = { workspace: workspacePath };
-  await Bun.write(getConfigPath(), `${JSON.stringify(config, null, 2)}\n`);
+  return realpath(cwd);
 }
