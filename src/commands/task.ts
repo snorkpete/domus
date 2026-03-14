@@ -328,7 +328,7 @@ async function cmdList(args: string[]): Promise<void> {
 
   filtered.forEach((t) => {
     const icon = statusIcon[t.status] ?? "?";
-    console.log(`${icon} [${t.refinement}] ${t.id} — ${t.title}`);
+    console.log(`${icon} [${t.refinement}] [${t.priority}] ${t.id} — ${t.title}`);
   });
 }
 

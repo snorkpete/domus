@@ -1,7 +1,7 @@
 # Task: Add Edit and Write tool permissions to domus init
 
 **ID:** add-edit-and-write-tool-permissions-to-domus-init
-**Status:** open
+**Status:** done
 **Refinement:** autonomous
 **Priority:** normal
 **Captured:** 2026-03-14

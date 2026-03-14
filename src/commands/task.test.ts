@@ -194,6 +194,33 @@ test("list: outputs icon + refinement + id + title", async () => {
   expect(out.lines().join("\n")).toContain("My Task");
 });
 
+test("list: includes priority in output line", async () => {
+  await runTask(["add", "--title", "High Prio Task", "--priority", "high"]);
+  await runTask(["add", "--title", "Low Prio Task", "--priority", "low"]);
+
+  const out = captureOutput();
+  try {
+    await runTask(["list"]);
+  } finally {
+    out.restore();
+  }
+  const output = out.lines().join("\n");
+  expect(output).toContain("[high]");
+  expect(output).toContain("[low]");
+});
+
+test("list: default priority normal appears in output line", async () => {
+  await runTask(["add", "--title", "Normal Task"]);
+
+  const out = captureOutput();
+  try {
+    await runTask(["list"]);
+  } finally {
+    out.restore();
+  }
+  expect(out.lines()[0]).toContain("[normal]");
+});
+
 test("list --json: outputs full JSON array", async () => {
   await runTask(["add", "--title", "Task A"]);
   await runTask(["add", "--title", "Task B"]);
