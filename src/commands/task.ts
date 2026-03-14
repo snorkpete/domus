@@ -369,7 +369,7 @@ async function cmdUpdate(args: string[]): Promise<void> {
   const [id] = args;
 
   if (!id) {
-    console.error("Usage: domus task update <id> [--title <title>] [--summary <text>] [--tags <tag1,tag2>] [--priority <priority>] [--refinement <refinement>]");
+    console.error("Usage: domus task update <id> [--title <title>] [--summary <text>] [--tags <tag1,tag2>] [--priority <priority>] [--refinement <refinement>] [--depends-on <id1,id2>]");
     process.exit(1);
   }
 
@@ -386,8 +386,9 @@ async function cmdUpdate(args: string[]): Promise<void> {
   const newTags = parseFlag(args, "--tags")?.split(",").map((t) => t.trim()).filter(Boolean);
   const newPriority = parseFlag(args, "--priority") as TaskPriority | undefined;
   const newRefinement = parseFlag(args, "--refinement") as TaskRefinement | undefined;
+  const newDependsOn = parseFlag(args, "--depends-on");
 
-  if (!newTitle && !newSummary && !newTags && !newPriority && !newRefinement) {
+  if (!newTitle && !newSummary && !newTags && !newPriority && !newRefinement && newDependsOn === undefined) {
     console.error("Nothing to update. Provide at least one flag.");
     process.exit(1);
   }
@@ -397,6 +398,12 @@ async function cmdUpdate(args: string[]): Promise<void> {
   if (newTags) task.tags = newTags;
   if (newPriority) task.priority = newPriority;
   if (newRefinement) task.refinement = newRefinement;
+  if (newDependsOn !== undefined) {
+    task.depends_on = newDependsOn
+      .split(",")
+      .map((d) => d.trim())
+      .filter(Boolean);
+  }
 
   await writeTasks(root, tasks);
 
@@ -407,6 +414,10 @@ async function cmdUpdate(args: string[]): Promise<void> {
     if (newTitle) content = content.replace(/^# Task: .+$/m, `# Task: ${newTitle}`);
     if (newPriority) content = content.replace(/^\*\*Priority:\*\* .+$/m, `**Priority:** ${newPriority}`);
     if (newRefinement) content = content.replace(/^\*\*Refinement:\*\* .+$/m, `**Refinement:** ${newRefinement}`);
+    if (newDependsOn !== undefined) {
+      const depsStr = task.depends_on.length > 0 ? task.depends_on.join(", ") : "none";
+      content = content.replace(/^\*\*Depends on:\*\* .+$/m, `**Depends on:** ${depsStr}`);
+    }
     await writeFile(filePath, content, "utf-8");
   }
 

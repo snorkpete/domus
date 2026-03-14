@@ -1,5 +1,5 @@
 import { existsSync } from "node:fs";
-import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { mkdir, readFile, realpath, writeFile } from "node:fs/promises";
 import { join, resolve } from "node:path";
 
 const DOMUS_DIRS = [
@@ -40,6 +40,16 @@ const REQUIRED_PERMISSIONS = [
   "Glob",
   "Grep",
 ];
+
+export async function resolveDomusPermission(argv1: string): Promise<string | null> {
+  if (!argv1 || argv1.endsWith(".ts")) return null;
+  try {
+    const resolved = await realpath(argv1);
+    return `Bash(${resolved}:*)`;
+  } catch {
+    return null;
+  }
+}
 
 type Settings = {
   permissions?: { allow?: string[] };
@@ -105,8 +115,13 @@ export async function runInit(
     throw new Error("process.env.PATH is not set — cannot configure Claude settings.");
   }
 
+  const domusPermission = await resolveDomusPermission(process.argv[1]);
+  const dynamicPermissions = domusPermission
+    ? [...REQUIRED_PERMISSIONS, domusPermission]
+    : REQUIRED_PERMISSIONS;
+
   const existingAllow = settings.permissions?.allow ?? [];
-  const mergedAllow = [...new Set([...existingAllow, ...REQUIRED_PERMISSIONS])];
+  const mergedAllow = [...new Set([...existingAllow, ...dynamicPermissions])];
   settings.permissions = { ...settings.permissions, allow: mergedAllow };
   settings.env = { ...settings.env, PATH: envPath };
 

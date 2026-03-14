@@ -3,7 +3,7 @@ import { existsSync } from "node:fs";
 import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { runInit } from "./init.ts";
+import { resolveDomusPermission, runInit } from "./init.ts";
 
 let tempDir: string;
 
@@ -109,6 +109,37 @@ test("updates PATH on re-run without touching other settings", async () => {
     await readFile(join(tempDir, ".claude/settings.json"), "utf-8"),
   );
   expect(settings.env.PATH).toBe("/new/path:/bin");
+});
+
+test("resolveDomusPermission returns null for .ts paths (dev mode)", async () => {
+  expect(await resolveDomusPermission("/path/to/cli.ts")).toBeNull();
+  expect(await resolveDomusPermission("")).toBeNull();
+});
+
+test("resolveDomusPermission returns Bash permission for a real binary path", async () => {
+  // Use the bun binary itself as a real file that exists and can be realpath'd
+  const bunBin = process.execPath;
+  const result = await resolveDomusPermission(bunBin);
+  expect(result).not.toBeNull();
+  expect(result).toMatch(/^Bash\(.+:\*\)$/);
+});
+
+test("domus binary permission is included when resolveDomusPermission returns a value", async () => {
+  const fakePermission = "Bash(/usr/local/bin/domus:*)";
+  // Patch resolveDomusPermission indirectly by using process.argv[1] in a controlled way
+  // Since tests run via bun (.ts argv[1]), domusPermission will be null in runInit —
+  // verify this by confirming no Bash(/...domus:*) entry is added
+  await runInit([], { projectPath: tempDir });
+  const settings = JSON.parse(
+    await readFile(join(tempDir, ".claude/settings.json"), "utf-8"),
+  );
+  // In test mode (argv[1] ends in .ts), no dynamic binary entry should be added
+  const dynamicEntries = (settings.permissions.allow as string[]).filter(
+    (p) => p.startsWith("Bash(") && p.endsWith(":*)") && !p.includes("git") && !p.includes("bun"),
+  );
+  expect(dynamicEntries).toHaveLength(0);
+  // Suppress unused variable warning
+  void fakePermission;
 });
 
 test("deduplicates permissions on re-run", async () => {

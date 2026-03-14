@@ -362,6 +362,55 @@ test("ready: blocked task does not appear in ready", async () => {
   expect(readySection).not.toContain("dependent");
 });
 
+test("update: sets depends_on in JSONL and syncs .md Depends on field", async () => {
+  await runTask(["add", "--title", "Blocker"]);
+  await runTask(["add", "--title", "Dependent"]);
+  await runTask(["update", "dependent", "--depends-on", "blocker"]);
+
+  const tasks = await readTasksJsonl();
+  const dep = tasks.find((t) => t.id === "dependent") as { depends_on: string[] };
+  expect(dep.depends_on).toEqual(["blocker"]);
+
+  const md = await readTaskMd("dependent");
+  expect(md).toContain("**Depends on:** blocker");
+});
+
+test("update: clears depends_on when passed empty string", async () => {
+  await runTask(["add", "--title", "Blocker"]);
+  await runTask(["add", "--title", "Dependent", "--depends-on", "blocker"]);
+  await runTask(["update", "dependent", "--depends-on", ""]);
+
+  const tasks = await readTasksJsonl();
+  const dep = tasks.find((t) => t.id === "dependent") as { depends_on: string[] };
+  expect(dep.depends_on).toEqual([]);
+
+  const md = await readTaskMd("dependent");
+  expect(md).toContain("**Depends on:** none");
+});
+
+test("update: --depends-on alone does not trigger 'nothing to update' exit", async () => {
+  await runTask(["add", "--title", "Manual Task"]);
+  const trap = trapExit();
+  try {
+    await runTask(["update", "manual-task", "--depends-on", ""]);
+  } catch {
+    // ignore thrown exit
+  } finally {
+    trap.restore();
+  }
+  expect(trap.didExit()).toBe(false);
+});
+
+test("update: --depends-on is idempotent", async () => {
+  await runTask(["add", "--title", "Blocker"]);
+  await runTask(["add", "--title", "Dependent", "--depends-on", "blocker"]);
+  await runTask(["update", "dependent", "--depends-on", "blocker"]);
+
+  const tasks = await readTasksJsonl();
+  const dep = tasks.find((t) => t.id === "dependent") as { depends_on: string[] };
+  expect(dep.depends_on).toEqual(["blocker"]);
+});
+
 test("ready: unblocked after dependency is done", async () => {
   await runTask(["add", "--title", "Blocker"]);
   await runTask(["add", "--title", "Dependent", "--depends-on", "blocker"]);
