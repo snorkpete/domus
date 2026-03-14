@@ -1,6 +1,7 @@
 import { existsSync } from "node:fs";
 import { mkdir, readFile, realpath, writeFile } from "node:fs/promises";
-import { join, resolve } from "node:path";
+import { join } from "node:path";
+import { projectRoot } from "../lib/jsonl.ts";
 
 const DOMUS_DIRS = [
   ".domus/ideas",
@@ -65,7 +66,7 @@ export async function runInit(
   _args: string[],
   options: InitOptions = {},
 ): Promise<void> {
-  const projectPath = options.projectPath ?? resolve(process.cwd());
+  const projectPath = options.projectPath ?? projectRoot();
   const created: string[] = [];
   const skipped: string[] = [];
 
