@@ -6,6 +6,9 @@ import { runIdea } from "./commands/idea.ts";
 import { runInit } from "./commands/init.ts";
 import { runTask } from "./commands/task.ts";
 import { runWork } from "./commands/work.ts";
+import { stripRoot } from "./lib/root.ts";
+
+export { stripRoot };
 
 const USAGE = `
 Domus — personal workflow and AI orchestration system
@@ -20,12 +23,14 @@ Usage:
   domus dispatch <ticket-file>   Dispatch a worker for a ticket
   domus task <subcommand>        Manage project tasks
 
-Options:
+Global Options:
+  --root <path>             Override project root (target a specific project's .domus/)
   --version, -v             Print version
   --help, -h                Print this help
 `.trim();
 
-const args = process.argv.slice(2);
+const { root, rest: args } = stripRoot(process.argv.slice(2));
+if (root) process.env.DOMUS_ROOT = root;
 const command = args[0];
 
 async function main() {

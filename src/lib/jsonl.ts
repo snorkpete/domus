@@ -9,7 +9,7 @@ export function today(): string {
 }
 
 export function projectRoot(): string {
-  return resolve(process.cwd());
+  return process.env.DOMUS_ROOT ?? resolve(process.cwd());
 }
 
 export const DOMUS_DIR = ".domus";

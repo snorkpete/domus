@@ -1,4 +1,4 @@
-import { describe, expect, test } from "bun:test";
+import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { mkdir, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -67,24 +67,40 @@ describe("parseTicketContent", () => {
 });
 
 describe("parseTicket (async)", () => {
-  test("reads file and parses it", async () => {
-    const dir = join(tmpdir(), `domus-tickets-${Date.now()}`);
+  let dir: string;
+
+  beforeEach(async () => {
+    dir = join(tmpdir(), `domus-tickets-${Date.now()}`);
     await mkdir(dir, { recursive: true });
+  });
+
+  afterEach(async () => {
+    await rm(dir, { recursive: true, force: true });
+  });
+
+  test("reads file and parses it", async () => {
     const filePath = join(dir, "006-worker-dispatch.md");
     await writeFile(filePath, SAMPLE_TICKET, "utf-8");
 
     const t = await parseTicket(filePath);
     expect(t.number).toBe("006");
     expect(t.status).toBe("pending");
-
-    await rm(dir, { recursive: true });
   });
 });
 
 describe("updateTicketStatus", () => {
-  test("updates only the Status line", async () => {
-    const dir = join(tmpdir(), `domus-tickets-${Date.now()}`);
+  let dir: string;
+
+  beforeEach(async () => {
+    dir = join(tmpdir(), `domus-tickets-${Date.now()}`);
     await mkdir(dir, { recursive: true });
+  });
+
+  afterEach(async () => {
+    await rm(dir, { recursive: true, force: true });
+  });
+
+  test("updates only the Status line", async () => {
     const filePath = join(dir, "006.md");
     await writeFile(filePath, SAMPLE_TICKET, "utf-8");
 
@@ -94,13 +110,9 @@ describe("updateTicketStatus", () => {
     expect(updated).toContain("**Status:** in-progress");
     expect(updated).toContain("**Priority:** high"); // other fields unchanged
     expect(updated).toContain("**Branch:** feat/006-worker-dispatch");
-
-    await rm(dir, { recursive: true });
   });
 
   test("only replaces the first Status line", async () => {
-    const dir = join(tmpdir(), `domus-tickets-${Date.now()}`);
-    await mkdir(dir, { recursive: true });
     const content =
       "# 001 — Test\n\n**Status:** pending\n\nSome text with **Status:** draft inside.\n";
     const filePath = join(dir, "001.md");
@@ -113,7 +125,5 @@ describe("updateTicketStatus", () => {
     const statusLines = lines.filter((l) => l.startsWith("**Status:**"));
     expect(statusLines).toHaveLength(1);
     expect(statusLines[0]).toBe("**Status:** done");
-
-    await rm(dir, { recursive: true });
   });
 });
