@@ -1,7 +1,7 @@
 # Task: Fix resolveDomusPermission to work with bun linked binaries
 
 **ID:** fix-resolvedomuspermission-to-work-with-bun-linked-binaries
-**Status:** open
+**Status:** done
 **Refinement:** raw
 **Priority:** low
 **Captured:** 2026-03-14
