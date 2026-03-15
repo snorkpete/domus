@@ -111,35 +111,31 @@ test("updates PATH on re-run without touching other settings", async () => {
   expect(settings.env.PATH).toBe("/new/path:/bin");
 });
 
-test("resolveDomusPermission returns null for .ts paths (dev mode)", async () => {
-  expect(await resolveDomusPermission("/path/to/cli.ts")).toBeNull();
-  expect(await resolveDomusPermission("")).toBeNull();
+test("resolveDomusPermission returns null when domus is not in PATH and argv1 is dev mode", async () => {
+  const noWhich = () => null;
+  expect(await resolveDomusPermission("/path/to/cli.ts", noWhich)).toBeNull();
+  expect(await resolveDomusPermission("", noWhich)).toBeNull();
 });
 
-test("resolveDomusPermission returns Bash permission for a real binary path", async () => {
-  // Use the bun binary itself as a real file that exists and can be realpath'd
+test("resolveDomusPermission uses Bun.which result when domus is in PATH", async () => {
+  const result = await resolveDomusPermission("", () => "/usr/local/bin/domus");
+  expect(result).toBe("Bash(/usr/local/bin/domus:*)");
+});
+
+test("resolveDomusPermission falls back to argv1 when domus is not in PATH", async () => {
   const bunBin = process.execPath;
-  const result = await resolveDomusPermission(bunBin);
+  const result = await resolveDomusPermission(bunBin, () => null);
   expect(result).not.toBeNull();
   expect(result).toMatch(/^Bash\(.+:\*\)$/);
 });
 
-test("domus binary permission is included when resolveDomusPermission returns a value", async () => {
-  const fakePermission = "Bash(/usr/local/bin/domus:*)";
-  // Patch resolveDomusPermission indirectly by using process.argv[1] in a controlled way
-  // Since tests run via bun (.ts argv[1]), domusPermission will be null in runInit —
-  // verify this by confirming no Bash(/...domus:*) entry is added
-  await runInit([], { projectPath: tempDir });
-  const settings = JSON.parse(
-    await readFile(join(tempDir, ".claude/settings.json"), "utf-8"),
-  );
-  // In test mode (argv[1] ends in .ts), no dynamic binary entry should be added
-  const dynamicEntries = (settings.permissions.allow as string[]).filter(
-    (p) => p.startsWith("Bash(") && p.endsWith(":*)") && !p.includes("git") && !p.includes("bun"),
-  );
-  expect(dynamicEntries).toHaveLength(0);
-  // Suppress unused variable warning
-  void fakePermission;
+test("resolveDomusPermission ignores .ts Bun.which result (bun link edge case)", async () => {
+  const noWhich = () => null;
+  // If which returns a .ts path (shouldn't happen but defensive), fall through to argv1
+  const result = await resolveDomusPermission("", () => "/path/to/cli.ts");
+  // .ts which result is skipped; argv1 is empty so null
+  expect(result).toBeNull();
+  void noWhich;
 });
 
 test("deduplicates permissions on re-run", async () => {

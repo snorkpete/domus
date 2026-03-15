@@ -42,7 +42,19 @@ const REQUIRED_PERMISSIONS = [
   "Grep",
 ];
 
-export async function resolveDomusPermission(argv1: string): Promise<string | null> {
+type WhichFn = (cmd: string) => string | null;
+
+export async function resolveDomusPermission(
+  argv1: string,
+  which: WhichFn = Bun.which,
+): Promise<string | null> {
+  // Primary: find domus in PATH — works for both compiled binaries and bun link installs
+  const whichPath = which("domus");
+  if (whichPath && !whichPath.endsWith(".ts")) {
+    return `Bash(${whichPath}:*)`;
+  }
+
+  // Fallback: use argv1 directly (compiled binary not on PATH)
   if (!argv1 || argv1.endsWith(".ts")) return null;
   try {
     const resolved = await realpath(argv1);

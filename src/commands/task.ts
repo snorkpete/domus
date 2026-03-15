@@ -73,6 +73,18 @@ function isBlocked(task: TaskEntry, done: Set<string>): boolean {
 // ── Subcommands ──────────────────────────────────────────────────────────────
 
 async function cmdAdd(args: string[]): Promise<void> {
+  if (hasFlag(args, "--help") || hasFlag(args, "-h")) {
+    console.log("Usage: domus task add --title <title> [options]");
+    console.log(
+      "Options: --summary <text> --tags <tag1,tag2> --priority <high|normal|low>",
+    );
+    console.log(
+      "         --refinement <raw|refined|autonomous> --parent <id> --depends-on <id1,id2>",
+    );
+    console.log("         --idea <idea-id>");
+    return;
+  }
+
   const root = projectRoot();
   const title = parseFlag(args, "--title");
   if (!title) {
@@ -174,6 +186,11 @@ _Remove if empty._
 }
 
 async function cmdStatus(args: string[]): Promise<void> {
+  if (hasFlag(args, "--help") || hasFlag(args, "-h")) {
+    console.log("Usage: domus task status <id> <open|in-progress|done|cancelled|deferred> [--note <text>]");
+    return;
+  }
+
   const root = projectRoot();
   const [id, newStatus] = args;
 
@@ -333,6 +350,11 @@ async function cmdList(args: string[]): Promise<void> {
 }
 
 async function cmdShow(args: string[]): Promise<void> {
+  if (hasFlag(args, "--help") || hasFlag(args, "-h")) {
+    console.log("Usage: domus task show <id>");
+    return;
+  }
+
   const root = projectRoot();
   const [id] = args;
 
@@ -365,6 +387,11 @@ async function cmdShow(args: string[]): Promise<void> {
 }
 
 async function cmdUpdate(args: string[]): Promise<void> {
+  if (hasFlag(args, "--help") || hasFlag(args, "-h")) {
+    console.log("Usage: domus task update <id> [--title <title>] [--summary <text>] [--tags <tag1,tag2>] [--priority <priority>] [--refinement <refinement>] [--depends-on <id1,id2>]");
+    return;
+  }
+
   const root = projectRoot();
   const [id] = args;
 

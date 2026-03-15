@@ -86,6 +86,11 @@ export async function runAdd(
   args: string[],
   options: AddOptions = {},
 ): Promise<void> {
+  if (args[0] === "--help" || args[0] === "-h") {
+    console.log("Usage: domus add project <git-url-or-local-path>");
+    return;
+  }
+
   const cloneFn = options.cloneFn ?? defaultClone;
 
   if (args[0] !== "project") {
@@ -96,9 +101,9 @@ export async function runAdd(
   }
 
   const target = args[1];
-  if (!target) {
-    console.error("Usage: domus add project <git-url-or-local-path>");
-    process.exit(1);
+  if (!target || target === "--help" || target === "-h") {
+    console.log("Usage: domus add project <git-url-or-local-path>");
+    return;
   }
 
   if (isUrl(target)) {

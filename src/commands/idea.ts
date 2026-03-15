@@ -59,6 +59,12 @@ async function writeIdeas(root: string, ideas: IdeaEntry[]): Promise<void> {
 // ── Subcommands ──────────────────────────────────────────────────────────────
 
 async function cmdAdd(args: string[]): Promise<void> {
+  if (hasFlag(args, "--help") || hasFlag(args, "-h")) {
+    console.log("Usage: domus idea add --title <title> [options]");
+    console.log("Options: --summary <text> --tags <tag1,tag2> --status <status>");
+    return;
+  }
+
   const root = projectRoot();
   const title = parseFlag(args, "--title");
   if (!title) {
@@ -132,6 +138,11 @@ _To be filled in._
 }
 
 async function cmdStatus(args: string[]): Promise<void> {
+  if (hasFlag(args, "--help") || hasFlag(args, "-h")) {
+    console.log("Usage: domus idea status <id> <raw|refined|scoped|implemented|abandoned|deferred> [--note <text>]");
+    return;
+  }
+
   const root = projectRoot();
   const [id, newStatus] = args;
 
@@ -304,6 +315,11 @@ async function cmdList(args: string[]): Promise<void> {
 }
 
 async function cmdShow(args: string[]): Promise<void> {
+  if (hasFlag(args, "--help") || hasFlag(args, "-h")) {
+    console.log("Usage: domus idea show <id>");
+    return;
+  }
+
   const root = projectRoot();
   const [id] = args;
 
@@ -332,6 +348,11 @@ async function cmdShow(args: string[]): Promise<void> {
 }
 
 async function cmdUpdate(args: string[]): Promise<void> {
+  if (hasFlag(args, "--help") || hasFlag(args, "-h")) {
+    console.log("Usage: domus idea update <id> [--title <title>] [--summary <text>] [--tags <tag1,tag2>]");
+    return;
+  }
+
   const root = projectRoot();
   const [id] = args;
 
