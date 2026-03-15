@@ -596,6 +596,29 @@ test("overview: empty list prints 'No tasks'", async () => {
   expect(output).toContain("No tasks");
 });
 
+test("overview: --interval shows refresh indicator as first line", async () => {
+  await runTask(["add", "--title", "Some Task"]);
+  const out = captureOutput();
+  try {
+    await runTask(["overview", "--interval", "30"]);
+  } finally {
+    out.restore();
+  }
+  expect(out.lines()[0]).toContain("↻");
+  expect(out.lines()[0]).toContain("30s");
+});
+
+test("overview: no interval flag omits refresh indicator", async () => {
+  await runTask(["add", "--title", "Some Task"]);
+  const out = captureOutput();
+  try {
+    await runTask(["overview"]);
+  } finally {
+    out.restore();
+  }
+  expect(out.lines().join("\n")).not.toContain("↻");
+});
+
 test("ready: unblocked after dependency is done", async () => {
   await runTask(["add", "--title", "Blocker"]);
   await runTask(["add", "--title", "Dependent", "--depends-on", "blocker"]);

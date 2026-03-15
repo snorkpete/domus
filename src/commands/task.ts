@@ -490,6 +490,14 @@ function statusAnsi(icon: string, status: TaskStatus): string {
   return icon;
 }
 
+function lineAnsi(line: string, status: TaskStatus): string {
+  const code = status === "in-progress" ? "36" : status === "done" ? "2" : null;
+  if (!code) return line;
+  // Re-apply the line color after every inner reset so nested icon codes don't break it
+  const reapply = `\x1b[0m\x1b[${code}m`;
+  return `\x1b[${code}m${line.replace(/\x1b\[0m/g, reapply)}\x1b[0m`;
+}
+
 function sectionHeader(label: string): string {
   const line = "─".repeat(48 - label.length - 4);
   return ansi("2", `── ${label} ${line}`);
@@ -498,6 +506,7 @@ function sectionHeader(label: string): string {
 async function cmdOverview(args: string[]): Promise<void> {
   const includeDone = hasFlag(args, "--include-done");
   const includeBlocked = hasFlag(args, "--blocked");
+  const interval = parseFlag(args, "--interval");
 
   const root = projectRoot();
   const tasks = await readTasks(root);
@@ -531,6 +540,11 @@ async function cmdOverview(args: string[]): Promise<void> {
 
   const hasAny = supervised.length > 0 || autonomous.length > 0;
 
+  if (interval) {
+    console.log(ansi("2", `↻ ${interval}s`));
+    console.log();
+  }
+
   if (!hasAny) {
     console.log("No tasks to display.");
     return;
@@ -543,7 +557,7 @@ async function cmdOverview(args: string[]): Promise<void> {
     const blockedSuffix = includeBlocked && isBlocked(t, done)
       ? ansi("33", ` ⊘ waiting on: ${t.depends_on.filter((d) => !done.has(d)).join(", ")}`)
       : "";
-    return `${pIcon} ${rIcon} ${sIcon}  ${t.id}${blockedSuffix}`;
+    return lineAnsi(`${pIcon} ${rIcon} ${sIcon}  ${t.id}${blockedSuffix}`, t.status);
   }
 
   function formatAutonomous(t: TaskEntry): string {
@@ -552,7 +566,7 @@ async function cmdOverview(args: string[]): Promise<void> {
     const blockedSuffix = includeBlocked && isBlocked(t, done)
       ? ansi("33", ` ⊘ waiting on: ${t.depends_on.filter((d) => !done.has(d)).join(", ")}`)
       : "";
-    return `${pIcon} ${sIcon}  ${t.id}${blockedSuffix}`;
+    return lineAnsi(`${pIcon} ${sIcon}  ${t.id}${blockedSuffix}`, t.status);
   }
 
   if (supervised.length > 0) {
@@ -578,9 +592,11 @@ function cmdWatch(args: string[]): void {
     process.exit(1);
   }
 
+  const interval = parseFlag(args, "--interval") ?? "15";
+  const passthroughArgs = args.filter((a, i) => a !== "--interval" && args[i - 1] !== "--interval");
   const domusBin = Bun.which("domus") ?? "domus";
   const result = Bun.spawnSync(
-    [watchBin, "-c", domusBin, "task", "overview", ...args],
+    [watchBin, "-c", "-t", "-n", interval, domusBin, "task", "overview", "--interval", interval, ...passthroughArgs],
     { stdio: ["inherit", "inherit", "inherit"] },
   );
   process.exit(result.exitCode ?? 0);
@@ -599,7 +615,7 @@ Usage:
   domus task overview [--include-done] [--blocked]
   domus task ready
   domus task list [--status <status>] [--json]
-  domus task watch [--include-done] [--blocked] [-n <seconds>]
+  domus task watch [--interval <seconds>] [--include-done] [--blocked]
 
 Subcommands:
   add       Create a new task (writes to .domus/tasks/)
