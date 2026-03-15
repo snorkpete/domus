@@ -451,6 +451,126 @@ async function cmdUpdate(args: string[]): Promise<void> {
   console.log(`Task ${id} updated.`);
 }
 
+// ── Overview ──────────────────────────────────────────────────────────────────
+
+function ansi(code: string, text: string): string {
+  return `\x1b[${code}m${text}\x1b[0m`;
+}
+
+const PRIORITY_ICON: Record<TaskPriority, string> = {
+  high: "▲",
+  normal: "·",
+  low: "▼",
+};
+
+const STATUS_ICON: Record<string, string> = {
+  open: "○",
+  "in-progress": "◑",
+  done: "●",
+  cancelled: "✕",
+  deferred: "⏸",
+  blocked: "⊘",
+};
+
+const REFINEMENT_ICON: Record<string, string> = {
+  raw: "~",
+  refined: "◎",
+};
+
+function priorityAnsi(icon: string, priority: TaskPriority): string {
+  if (priority === "high") return ansi("33;1", icon); // yellow bold
+  if (priority === "low") return ansi("2", icon);     // dim
+  return icon;
+}
+
+function statusAnsi(icon: string, status: TaskStatus): string {
+  if (status === "in-progress") return ansi("36", icon); // cyan
+  if (status === "done") return ansi("32", icon);        // green
+  if (status === "cancelled") return ansi("2", icon);    // dim
+  return icon;
+}
+
+function sectionHeader(label: string): string {
+  const line = "─".repeat(48 - label.length - 4);
+  return ansi("2", `── ${label} ${line}`);
+}
+
+async function cmdOverview(args: string[]): Promise<void> {
+  const includeDone = hasFlag(args, "--include-done");
+  const includeBlocked = hasFlag(args, "--blocked");
+
+  const root = projectRoot();
+  const tasks = await readTasks(root);
+
+  if (tasks.length === 0) {
+    console.log("No tasks found.");
+    return;
+  }
+
+  const done = doneIds(tasks);
+
+  const visibleStatuses = new Set<TaskStatus>(["open", "in-progress"]);
+  if (includeDone) visibleStatuses.add("done");
+
+  // Separate blocked from unblocked for default display
+  const supervised: TaskEntry[] = [];
+  const autonomous: TaskEntry[] = [];
+
+  for (const t of tasks) {
+    if (!visibleStatuses.has(t.status)) continue;
+
+    const blocked = isBlocked(t, done);
+    if (blocked && !includeBlocked) continue;
+
+    if (t.refinement === "autonomous") {
+      autonomous.push(t);
+    } else {
+      supervised.push(t);
+    }
+  }
+
+  const hasAny = supervised.length > 0 || autonomous.length > 0;
+
+  if (!hasAny) {
+    console.log("No tasks to display.");
+    return;
+  }
+
+  function formatSupervised(t: TaskEntry): string {
+    const pIcon = priorityAnsi(PRIORITY_ICON[t.priority] ?? "·", t.priority);
+    const rIcon = REFINEMENT_ICON[t.refinement] ?? "?";
+    const sIcon = statusAnsi(STATUS_ICON[t.status] ?? "?", t.status);
+    const blockedSuffix = includeBlocked && isBlocked(t, done)
+      ? ansi("33", ` ⊘ waiting on: ${t.depends_on.filter((d) => !done.has(d)).join(", ")}`)
+      : "";
+    return `${pIcon} ${rIcon} ${sIcon}  ${t.id} — ${t.title}${blockedSuffix}`;
+  }
+
+  function formatAutonomous(t: TaskEntry): string {
+    const pIcon = priorityAnsi(PRIORITY_ICON[t.priority] ?? "·", t.priority);
+    const sIcon = statusAnsi(STATUS_ICON[t.status] ?? "?", t.status);
+    const blockedSuffix = includeBlocked && isBlocked(t, done)
+      ? ansi("33", ` ⊘ waiting on: ${t.depends_on.filter((d) => !done.has(d)).join(", ")}`)
+      : "";
+    return `${pIcon} ${sIcon}  ${t.id} — ${t.title}${blockedSuffix}`;
+  }
+
+  if (supervised.length > 0) {
+    console.log(sectionHeader("Supervised"));
+    for (const t of supervised) {
+      console.log(formatSupervised(t));
+    }
+    if (autonomous.length > 0) console.log();
+  }
+
+  if (autonomous.length > 0) {
+    console.log(sectionHeader("Autonomous"));
+    for (const t of autonomous) {
+      console.log(formatAutonomous(t));
+    }
+  }
+}
+
 // ── Entry point ──────────────────────────────────────────────────────────────
 
 const TASK_USAGE = `
@@ -461,6 +581,7 @@ Usage:
   domus task status <id> <new-status> [--note <text>]
   domus task update <id> [--title <title>] [--summary <text>] [--tags <tag1,tag2>] [--priority <priority>] [--refinement <refinement>]
   domus task show <id>
+  domus task overview [--include-done] [--blocked]
   domus task ready
   domus task list [--status <status>] [--json]
 
@@ -469,6 +590,7 @@ Subcommands:
   status    Update task status
   update    Update metadata fields (title, summary, tags, priority, refinement)
   show      Print full detail for a single task
+  overview  Compact watch-friendly overview grouped by Supervised / Autonomous
   ready     Show what's ready to work on (grouped by readiness)
   list      List all tasks (--json for machine-readable output)
 `.trim();
@@ -488,6 +610,9 @@ export async function runTask(args: string[]): Promise<void> {
       break;
     case "show":
       await cmdShow(args.slice(1));
+      break;
+    case "overview":
+      await cmdOverview(args.slice(1));
       break;
     case "ready":
       await cmdReady(args.slice(1));

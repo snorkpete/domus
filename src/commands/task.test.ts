@@ -438,6 +438,164 @@ test("update: --depends-on is idempotent", async () => {
   expect(dep.depends_on).toEqual(["blocker"]);
 });
 
+// ── overview ──────────────────────────────────────────────────────────────────
+
+// Strip ANSI escape codes for plain-text assertions
+function stripAnsi(s: string): string {
+  // biome-ignore lint/suspicious/noControlCharactersInRegex: needed for ANSI stripping
+  return s.replace(/\x1b\[[0-9;]*m/g, "");
+}
+
+test("overview: groups supervised and autonomous tasks", async () => {
+  await runTask(["add", "--title", "Supervised Task", "--refinement", "refined"]);
+  await runTask(["add", "--title", "Auto Task", "--refinement", "autonomous"]);
+
+  const out = captureOutput();
+  try {
+    await runTask(["overview"]);
+  } finally {
+    out.restore();
+  }
+  const output = stripAnsi(out.lines().join("\n"));
+  expect(output).toContain("Supervised");
+  expect(output).toContain("supervised-task");
+  expect(output).toContain("Autonomous");
+  expect(output).toContain("auto-task");
+});
+
+test("overview: default hides done tasks", async () => {
+  await runTask(["add", "--title", "Open Task"]);
+  await runTask(["add", "--title", "Done Task"]);
+  await runTask(["status", "done-task", "done"]);
+
+  const out = captureOutput();
+  try {
+    await runTask(["overview"]);
+  } finally {
+    out.restore();
+  }
+  const output = stripAnsi(out.lines().join("\n"));
+  expect(output).toContain("open-task");
+  expect(output).not.toContain("done-task");
+});
+
+test("overview: --include-done shows done tasks", async () => {
+  await runTask(["add", "--title", "Open Task"]);
+  await runTask(["add", "--title", "Done Task"]);
+  await runTask(["status", "done-task", "done"]);
+
+  const out = captureOutput();
+  try {
+    await runTask(["overview", "--include-done"]);
+  } finally {
+    out.restore();
+  }
+  const output = stripAnsi(out.lines().join("\n"));
+  expect(output).toContain("open-task");
+  expect(output).toContain("done-task");
+});
+
+test("overview: supervised rows include refinement icon, autonomous do not", async () => {
+  await runTask(["add", "--title", "Raw Task", "--refinement", "raw"]);
+  await runTask(["add", "--title", "Auto Task", "--refinement", "autonomous"]);
+
+  const out = captureOutput();
+  try {
+    await runTask(["overview"]);
+  } finally {
+    out.restore();
+  }
+  const lines = out.lines().map(stripAnsi);
+  const rawLine = lines.find((l) => l.includes("raw-task"));
+  const autoLine = lines.find((l) => l.includes("auto-task"));
+
+  // Raw supervised line should contain the ~ refinement icon
+  expect(rawLine).toBeDefined();
+  expect(rawLine).toContain("~");
+
+  // Autonomous line should NOT contain ~ or ◎
+  expect(autoLine).toBeDefined();
+  expect(autoLine).not.toContain("~");
+  expect(autoLine).not.toContain("◎");
+});
+
+test("overview: priority icons appear in output", async () => {
+  await runTask(["add", "--title", "High Task", "--priority", "high"]);
+  await runTask(["add", "--title", "Low Task", "--priority", "low"]);
+  await runTask(["add", "--title", "Normal Task", "--priority", "normal"]);
+
+  const out = captureOutput();
+  try {
+    await runTask(["overview"]);
+  } finally {
+    out.restore();
+  }
+  const output = out.lines().join("\n");
+  expect(output).toContain("▲"); // high
+  expect(output).toContain("▼"); // low
+  expect(output).toContain("·"); // normal
+});
+
+test("overview: status icons appear for open and in-progress", async () => {
+  await runTask(["add", "--title", "Open Task"]);
+  await runTask(["add", "--title", "Running Task"]);
+  await runTask(["status", "running-task", "in-progress"]);
+
+  const out = captureOutput();
+  try {
+    await runTask(["overview"]);
+  } finally {
+    out.restore();
+  }
+  const output = out.lines().join("\n");
+  expect(output).toContain("○"); // open
+  expect(output).toContain("◑"); // in-progress
+});
+
+test("overview: default hides blocked tasks", async () => {
+  await runTask(["add", "--title", "Blocker"]);
+  await runTask(["add", "--title", "Blocked Task", "--depends-on", "blocker"]);
+
+  const out = captureOutput();
+  try {
+    await runTask(["overview"]);
+  } finally {
+    out.restore();
+  }
+  const output = stripAnsi(out.lines().join("\n"));
+  expect(output).toContain("blocker");
+  expect(output).not.toContain("blocked-task");
+});
+
+test("overview: --blocked shows blocked tasks with their blockers", async () => {
+  await runTask(["add", "--title", "Blocker"]);
+  await runTask(["add", "--title", "Blocked Task", "--depends-on", "blocker"]);
+
+  const out = captureOutput();
+  try {
+    await runTask(["overview", "--blocked"]);
+  } finally {
+    out.restore();
+  }
+  const output = stripAnsi(out.lines().join("\n"));
+  expect(output).toContain("blocked-task");
+  expect(output).toContain("blocker");
+  // The blocked task line should mention its dependency
+  const blockedLine = output.split("\n").find((l) => l.includes("blocked-task"));
+  expect(blockedLine).toContain("blocker");
+});
+
+test("overview: empty list prints 'No tasks'", async () => {
+  const out = captureOutput();
+  try {
+    await runTask(["overview"]);
+  } finally {
+    out.restore();
+  }
+  const output = out.lines().join("\n");
+  expect(output).toContain("No tasks");
+});
+
 test("ready: unblocked after dependency is done", async () => {
   await runTask(["add", "--title", "Blocker"]);
   await runTask(["add", "--title", "Dependent", "--depends-on", "blocker"]);
