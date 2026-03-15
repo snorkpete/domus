@@ -571,6 +571,21 @@ async function cmdOverview(args: string[]): Promise<void> {
   }
 }
 
+function cmdWatch(args: string[]): void {
+  const watchBin = Bun.which("watch");
+  if (!watchBin) {
+    console.error("watch not found — install it with: brew install watch");
+    process.exit(1);
+  }
+
+  const domusBin = Bun.which("domus") ?? "domus";
+  const result = Bun.spawnSync(
+    [watchBin, "-c", domusBin, "task", "overview", ...args],
+    { stdio: ["inherit", "inherit", "inherit"] },
+  );
+  process.exit(result.exitCode ?? 0);
+}
+
 // ── Entry point ──────────────────────────────────────────────────────────────
 
 const TASK_USAGE = `
@@ -584,6 +599,7 @@ Usage:
   domus task overview [--include-done] [--blocked]
   domus task ready
   domus task list [--status <status>] [--json]
+  domus task watch [--include-done] [--blocked] [-n <seconds>]
 
 Subcommands:
   add       Create a new task (writes to .domus/tasks/)
@@ -593,6 +609,7 @@ Subcommands:
   overview  Compact watch-friendly overview grouped by Supervised / Autonomous
   ready     Show what's ready to work on (grouped by readiness)
   list      List all tasks (--json for machine-readable output)
+  watch     Live-refresh overview via watch(1) (pass extra args through)
 `.trim();
 
 export async function runTask(args: string[]): Promise<void> {
@@ -619,6 +636,9 @@ export async function runTask(args: string[]): Promise<void> {
       break;
     case "list":
       await cmdList(args.slice(1));
+      break;
+    case "watch":
+      cmdWatch(args.slice(1));
       break;
     case "--help":
     case "-h":
