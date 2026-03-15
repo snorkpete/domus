@@ -542,7 +542,6 @@ async function cmdOverview(args: string[]): Promise<void> {
 
   if (interval) {
     console.log(ansi("2", `↻ ${interval}s`));
-    console.log();
   }
 
   if (!hasAny) {
