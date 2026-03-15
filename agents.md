@@ -4,6 +4,8 @@
 
 Domus is a personal workflow and AI orchestration system — a meta-layer above all projects on a machine. It provides long-term memory and coordination across them. See `project_spec.md` for full system design.
 
+**Vision:** Domus removes the human from the *execution* path without removing them from the *decision* path. Context mobility — the ability for any session to pick up any task without explanation — is what makes autonomous execution possible. Read `decisions/000-vision.md` when scoping new features, evaluating whether a proposed change fits the system's purpose, or when the right direction feels unclear.
+
 ## Stack
 
 - **Language:** TypeScript
