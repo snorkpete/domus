@@ -388,7 +388,7 @@ async function cmdShow(args: string[]): Promise<void> {
 
 async function cmdUpdate(args: string[]): Promise<void> {
   if (hasFlag(args, "--help") || hasFlag(args, "-h")) {
-    console.log("Usage: domus task update <id> [--title <title>] [--summary <text>] [--tags <tag1,tag2>] [--priority <priority>] [--refinement <refinement>] [--depends-on <id1,id2>]");
+    console.log("Usage: domus task update <id> [--title <title>] [--summary <text>] [--tags <tag1,tag2>] [--priority <priority>] [--refinement <refinement>] [--depends-on <id1,id2>] [--note <text>] [--parent <id>] [--idea <id>]");
     return;
   }
 
@@ -396,7 +396,7 @@ async function cmdUpdate(args: string[]): Promise<void> {
   const [id] = args;
 
   if (!id) {
-    console.error("Usage: domus task update <id> [--title <title>] [--summary <text>] [--tags <tag1,tag2>] [--priority <priority>] [--refinement <refinement>] [--depends-on <id1,id2>]");
+    console.error("Usage: domus task update <id> [--title <title>] [--summary <text>] [--tags <tag1,tag2>] [--priority <priority>] [--refinement <refinement>] [--depends-on <id1,id2>] [--note <text>] [--parent <id>] [--idea <id>]");
     process.exit(1);
   }
 
@@ -414,8 +414,11 @@ async function cmdUpdate(args: string[]): Promise<void> {
   const newPriority = parseFlag(args, "--priority") as TaskPriority | undefined;
   const newRefinement = parseFlag(args, "--refinement") as TaskRefinement | undefined;
   const newDependsOn = parseFlag(args, "--depends-on");
+  const newNote = parseFlag(args, "--note");
+  const newParent = parseFlag(args, "--parent");
+  const newIdea = parseFlag(args, "--idea");
 
-  if (!newTitle && !newSummary && !newTags && !newPriority && !newRefinement && newDependsOn === undefined) {
+  if (!newTitle && !newSummary && !newTags && !newPriority && !newRefinement && newDependsOn === undefined && !newNote && newParent === undefined && newIdea === undefined) {
     console.error("Nothing to update. Provide at least one flag.");
     process.exit(1);
   }
@@ -431,6 +434,9 @@ async function cmdUpdate(args: string[]): Promise<void> {
       .map((d) => d.trim())
       .filter(Boolean);
   }
+  if (newNote) task.outcome_note = newNote;
+  if (newParent !== undefined) task.parent_id = newParent || null;
+  if (newIdea !== undefined) task.idea_id = newIdea || null;
 
   await writeTasks(root, tasks);
 
@@ -444,6 +450,12 @@ async function cmdUpdate(args: string[]): Promise<void> {
     if (newDependsOn !== undefined) {
       const depsStr = task.depends_on.length > 0 ? task.depends_on.join(", ") : "none";
       content = content.replace(/^\*\*Depends on:\*\* .+$/m, `**Depends on:** ${depsStr}`);
+    }
+    if (newParent !== undefined) {
+      content = content.replace(/^\*\*Parent:\*\* .+$/m, `**Parent:** ${task.parent_id ?? "none"}`);
+    }
+    if (newIdea !== undefined) {
+      content = content.replace(/^\*\*Idea:\*\* .+$/m, `**Idea:** ${task.idea_id ?? "none"}`);
     }
     await writeFile(filePath, content, "utf-8");
   }
@@ -609,7 +621,7 @@ domus task — task management
 Usage:
   domus task add --title <title> [options]
   domus task status <id> <new-status> [--note <text>]
-  domus task update <id> [--title <title>] [--summary <text>] [--tags <tag1,tag2>] [--priority <priority>] [--refinement <refinement>]
+  domus task update <id> [--title <title>] [--summary <text>] [--tags <tag1,tag2>] [--priority <priority>] [--refinement <refinement>] [--note <text>] [--parent <id>] [--idea <id>]
   domus task show <id>
   domus task overview [--include-done] [--blocked]
   domus task ready
@@ -619,7 +631,7 @@ Usage:
 Subcommands:
   add       Create a new task (writes to .domus/tasks/)
   status    Update task status
-  update    Update metadata fields (title, summary, tags, priority, refinement)
+  update    Update metadata fields (title, summary, tags, priority, refinement, note, parent, idea)
   show      Print full detail for a single task
   overview  Compact watch-friendly overview grouped by Supervised / Autonomous
   ready     Show what's ready to work on (grouped by readiness)

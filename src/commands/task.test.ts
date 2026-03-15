@@ -438,6 +438,104 @@ test("update: --depends-on is idempotent", async () => {
   expect(dep.depends_on).toEqual(["blocker"]);
 });
 
+test("update: --note updates outcome_note in JSONL", async () => {
+  await runTask(["add", "--title", "My Task"]);
+  await runTask(["update", "my-task", "--note", "Completed with caveat"]);
+
+  const tasks = await readTasksJsonl();
+  expect(tasks[0].outcome_note).toBe("Completed with caveat");
+});
+
+test("update: --parent updates parent_id in JSONL and .md", async () => {
+  await runTask(["add", "--title", "Parent Task"]);
+  await runTask(["add", "--title", "Child Task"]);
+  await runTask(["update", "child-task", "--parent", "parent-task"]);
+
+  const tasks = await readTasksJsonl();
+  const child = tasks.find((t) => t.id === "child-task") as { parent_id: string | null };
+  expect(child.parent_id).toBe("parent-task");
+
+  const md = await readTaskMd("child-task");
+  expect(md).toContain("**Parent:** parent-task");
+});
+
+test("update: --parent empty string clears parent_id", async () => {
+  await runTask(["add", "--title", "Parent Task"]);
+  await runTask(["add", "--title", "Child Task", "--parent", "parent-task"]);
+  await runTask(["update", "child-task", "--parent", ""]);
+
+  const tasks = await readTasksJsonl();
+  const child = tasks.find((t) => t.id === "child-task") as { parent_id: string | null };
+  expect(child.parent_id).toBeNull();
+
+  const md = await readTaskMd("child-task");
+  expect(md).toContain("**Parent:** none");
+});
+
+test("update: --idea updates idea_id in JSONL and .md", async () => {
+  await runTask(["add", "--title", "My Task"]);
+  await runTask(["update", "my-task", "--idea", "my-idea"]);
+
+  const tasks = await readTasksJsonl();
+  const task = tasks.find((t) => t.id === "my-task") as { idea_id: string | null };
+  expect(task.idea_id).toBe("my-idea");
+
+  const md = await readTaskMd("my-task");
+  expect(md).toContain("**Idea:** my-idea");
+});
+
+test("update: --idea empty string clears idea_id", async () => {
+  await runTask(["add", "--title", "My Task", "--idea", "some-idea"]);
+  await runTask(["update", "my-task", "--idea", ""]);
+
+  const tasks = await readTasksJsonl();
+  const task = tasks.find((t) => t.id === "my-task") as { idea_id: string | null };
+  expect(task.idea_id).toBeNull();
+
+  const md = await readTaskMd("my-task");
+  expect(md).toContain("**Idea:** none");
+});
+
+test("update: --note alone does not trigger 'nothing to update' exit", async () => {
+  await runTask(["add", "--title", "My Task"]);
+  const trap = trapExit();
+  try {
+    await runTask(["update", "my-task", "--note", "some note"]);
+  } catch {
+    // ignore thrown exit
+  } finally {
+    trap.restore();
+  }
+  expect(trap.didExit()).toBe(false);
+});
+
+test("update: --parent alone does not trigger 'nothing to update' exit", async () => {
+  await runTask(["add", "--title", "Parent Task"]);
+  await runTask(["add", "--title", "Child Task"]);
+  const trap = trapExit();
+  try {
+    await runTask(["update", "child-task", "--parent", "parent-task"]);
+  } catch {
+    // ignore thrown exit
+  } finally {
+    trap.restore();
+  }
+  expect(trap.didExit()).toBe(false);
+});
+
+test("update: --idea alone does not trigger 'nothing to update' exit", async () => {
+  await runTask(["add", "--title", "My Task"]);
+  const trap = trapExit();
+  try {
+    await runTask(["update", "my-task", "--idea", "some-idea"]);
+  } catch {
+    // ignore thrown exit
+  } finally {
+    trap.restore();
+  }
+  expect(trap.didExit()).toBe(false);
+});
+
 // ── overview ──────────────────────────────────────────────────────────────────
 
 // Strip ANSI escape codes for plain-text assertions
