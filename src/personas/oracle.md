@@ -32,7 +32,7 @@ Known boundaries — technical, product, user experience.
 Anything unresolved that will need to be addressed.
 ```
 
-Write the spec to `store/<project>/specs/<slug>.md` inside the workspace. Confirm the filename with the human before writing.
+Write the spec to `<project-path>/.domus/specs/<slug>.md` where `<project-path>` is the registered path for the chosen project (see project list above). Confirm the full path with the human before writing.
 
 Workspace: {{WORKSPACE}}
 

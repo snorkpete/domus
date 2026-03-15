@@ -2,7 +2,7 @@
 
 ## What is this project?
 
-Domus is a personal workflow and AI orchestration system — a meta-layer above all projects on a machine. It provides long-term memory and coordination across them. See `project_spec.md` for full system design.
+Domus is a per-project workflow tool — a `.domus/` directory committed alongside the code that gives Claude structured context: ideas, tasks, and (eventually) specs. It integrates with Claude via CLAUDE.md and skills to support both interactive persona sessions and autonomous background work.
 
 **Vision:** Domus removes the human from the *execution* path without removing them from the *decision* path. Context mobility — the ability for any session to pick up any task without explanation — is what makes autonomous execution possible. Read `decisions/000-vision.md` when scoping new features, evaluating whether a proposed change fits the system's purpose, or when the right direction feels unclear.
 
@@ -29,7 +29,7 @@ src/
   cli.ts          ← entry point: routing only, no business logic
   commands/       ← one file per subcommand
   lib/            ← shared utilities and helpers
-  personas/       ← system prompt builders for Butler, Oracle, etc.
+  personas/       ← persona system prompts and overview (see personas.md)
 ```
 
 ## Act, don't defer
@@ -48,7 +48,7 @@ When running git commands in a directory other than the current working director
 
 Workers operate autonomously — they must not pause mid-task for permission prompts. `.claude/settings.json` pre-approves the standard tool set (git, bun, file operations). Workers should proceed without requesting additional permissions for any command within that set.
 
-If a task genuinely requires a tool outside the pre-approved set, note it in `WORKER_NOTES.md` at the repo root rather than prompting — the Foreman or human will handle it on the next pass.
+If a task genuinely requires a tool outside the pre-approved set, note it in `WORKER_NOTES.md` at the repo root rather than prompting — the human will handle it on the next pass.
 
 ## Conventions
 
