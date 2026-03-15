@@ -543,7 +543,7 @@ async function cmdOverview(args: string[]): Promise<void> {
     const blockedSuffix = includeBlocked && isBlocked(t, done)
       ? ansi("33", ` ⊘ waiting on: ${t.depends_on.filter((d) => !done.has(d)).join(", ")}`)
       : "";
-    return `${pIcon} ${rIcon} ${sIcon}  ${t.id} — ${t.title}${blockedSuffix}`;
+    return `${pIcon} ${rIcon} ${sIcon}  ${t.id}${blockedSuffix}`;
   }
 
   function formatAutonomous(t: TaskEntry): string {
@@ -552,7 +552,7 @@ async function cmdOverview(args: string[]): Promise<void> {
     const blockedSuffix = includeBlocked && isBlocked(t, done)
       ? ansi("33", ` ⊘ waiting on: ${t.depends_on.filter((d) => !done.has(d)).join(", ")}`)
       : "";
-    return `${pIcon} ${sIcon}  ${t.id} — ${t.title}${blockedSuffix}`;
+    return `${pIcon} ${sIcon}  ${t.id}${blockedSuffix}`;
   }
 
   if (supervised.length > 0) {
