@@ -58,6 +58,14 @@ If a task genuinely requires a tool outside the pre-approved set, note it in `WO
 - Targeted file edits over full rewrites — preserve context, don't regenerate.
 - Aim for a single commit per ticket. If changes naturally require multiple commits, that is a signal the ticket may be too large — note it in `WORKER_NOTES.md`.
 
+## Ideas vs tasks
+
+An **idea** is for exploring unknowns — "is this worth pursuing?" or "what are we even talking about?" Ideas are concepts under development. A task forms from an idea once it's clear something will be implemented.
+
+A **task** is for known implementation work. Even if details need refinement, the direction is decided.
+
+When in doubt: if you don't know whether something will be built, it's an idea. If you know it will, it's a task.
+
 ## Architectural decisions
 
 Rationale behind key design decisions lives in `decisions/`. When something about the project structure or approach seems non-obvious, check there before making assumptions.

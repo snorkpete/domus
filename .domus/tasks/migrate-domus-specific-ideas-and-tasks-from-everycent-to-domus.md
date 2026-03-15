@@ -1,7 +1,7 @@
 # Task: Migrate domus-specific ideas and tasks from everycent to domus
 
 **ID:** migrate-domus-specific-ideas-and-tasks-from-everycent-to-domus
-**Status:** open
+**Status:** done
 **Refinement:** raw
 **Priority:** low
 **Captured:** 2026-03-14

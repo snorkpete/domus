@@ -2,28 +2,53 @@
 
 **ID:** get-domus-ready-for-prod-new-machine-setup
 **Status:** open
-**Refinement:** raw
+**Refinement:** proposed
 **Priority:** high
 **Captured:** 2026-03-14
 **Parent:** none
 **Depends on:** none
 **Idea:** none
-**Spec refs:** none
+**Spec refs:** decisions/004-domus-store-and-worker-logging.md
 
 ---
 
 ## What This Task Is
 
-Update README with: how domus works, installation steps (bun dependency, PATH setup), required CLAUDE.md entries, skills to install. Consider whether to package as a Claude Code plugin or document as manual steps. Include a warning blurb: this is a learning project to understand working with and building around agents — not intended as a long-term tool, likely to be abandoned when learnings are exhausted and a maintained replacement exists.
+Make domus installable from scratch on a new machine. Right now there are too many undocumented manual steps. Fix that with three deliverables:
+
+1. **`setup/skills/`** — commit the required Claude Code skills into the repo so they can be copied to `~/.claude/skills/`
+2. **`setup/agents-md-instructions/`** — the content block to paste into a project's `agents.md` or `CLAUDE.md` to integrate domus
+3. **README.md** — full documentation covering concepts, vision, what's currently built, disclaimer, and step-by-step install/setup instructions
+
+`domus init` already handles PATH (writes env block to `.claude/settings.json`) and `.domus/` structure. It does **not** touch `CLAUDE.md` — that's intentional, instructions go in `setup/` instead.
 
 ---
 
 ## Acceptance Criteria
 
-- [ ] _Add acceptance criteria_
+- [ ] `setup/skills/` contains a subdirectory per required skill, each with its `SKILL.md`, matching what lives in `~/.claude/skills/` on this machine
+- [ ] `setup/agents-md-instructions/` contains the CLAUDE.md/agents.md integration content block
+- [ ] `README.md` exists at the repo root with all sections below
+- [ ] README: **What is domus** — concepts (context mobility, four pillars), what it does, how it fits into a Claude Code workflow
+- [ ] README: **Vision** — long-term direction, honest about current state vs. destination
+- [ ] README: **Disclaimer** — AI workflow learning project; primary purpose is to learn what it means to build with and around agents; no commitment to long-term maintenance; likely to be abandoned when the learnings are exhausted or a maintained equivalent exists
+- [ ] README: **Global installation** — bun install, clone, `bun install`, `bun link`, copy `setup/skills/*` to `~/.claude/skills/`
+- [ ] README: **Per-project setup** — copy `setup/agents-md-instructions/` content into `agents.md`/`CLAUDE.md`, run `domus init` (which handles PATH + `.claude/settings.json` + `.domus/` structure)
+- [ ] README: **What's currently available** — honest summary of implemented commands and their state
 
 ---
 
 ## Implementation Notes
 
-_Remove if empty._
+Skills on this machine at `~/.claude/skills/`:
+- `capture-task`
+- `capture-idea`
+- `update-task-status`
+- `task-ready`
+- `idea-refined`
+- `memory-cleanup`
+- `update-idea`
+
+The PATH fix (env block in `~/.claude/settings.json`) is already documented in the task `fix-domus-cli-access-in-claude-code-bash-tool`. `domus init` writes the same env block into the project's `.claude/settings.json` — verify this is working correctly and document it in the README.
+
+Do not have `domus init` touch `CLAUDE.md`. Users may use `agents.md`, `CLAUDE.md`, a global vs. project-local setup, or something else entirely. Keep it instructions-only via `setup/`.
