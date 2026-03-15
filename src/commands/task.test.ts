@@ -129,6 +129,13 @@ test("add: exits on invalid --refinement value", async () => {
   expect(trap.didExit()).toBe(true);
 });
 
+test("add: accepts proposed as a valid refinement value", async () => {
+  await runTask(["add", "--title", "Proposed Task", "--refinement", "proposed"]);
+
+  const tasks = await readTasksJsonl();
+  expect(tasks[0].refinement).toBe("proposed");
+});
+
 // ── status ────────────────────────────────────────────────────────────────────
 
 test("status: updates status in JSONL and .md file", async () => {
@@ -329,6 +336,17 @@ test("update: updates refinement in JSONL and .md", async () => {
 
   const md = await readTaskMd("my-task");
   expect(md).toContain("**Refinement:** autonomous");
+});
+
+test("update: --refinement proposed sets proposed in JSONL and .md", async () => {
+  await runTask(["add", "--title", "My Task"]);
+  await runTask(["update", "my-task", "--refinement", "proposed"]);
+
+  const tasks = await readTasksJsonl();
+  expect(tasks[0].refinement).toBe("proposed");
+
+  const md = await readTaskMd("my-task");
+  expect(md).toContain("**Refinement:** proposed");
 });
 
 test("update: exits on unknown id", async () => {
@@ -615,6 +633,21 @@ test("overview: supervised rows include refinement icon, autonomous do not", asy
   expect(autoLine).toBeDefined();
   expect(autoLine).not.toContain("~");
   expect(autoLine).not.toContain("◎");
+});
+
+test("overview: proposed task renders ◐ refinement icon", async () => {
+  await runTask(["add", "--title", "Proposed Task", "--refinement", "proposed"]);
+
+  const out = captureOutput();
+  try {
+    await runTask(["overview"]);
+  } finally {
+    out.restore();
+  }
+  const lines = out.lines().map(stripAnsi);
+  const proposedLine = lines.find((l) => l.includes("proposed-task"));
+  expect(proposedLine).toBeDefined();
+  expect(proposedLine).toContain("◐");
 });
 
 test("overview: priority icons appear in output", async () => {

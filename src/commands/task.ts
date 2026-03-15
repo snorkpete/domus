@@ -14,7 +14,7 @@ import {
 // ── Types ────────────────────────────────────────────────────────────────────
 
 type TaskStatus = "open" | "in-progress" | "done" | "cancelled" | "deferred";
-type TaskRefinement = "raw" | "refined" | "autonomous";
+type TaskRefinement = "raw" | "proposed" | "refined" | "autonomous";
 type TaskPriority = "high" | "normal" | "low";
 
 type TaskEntry = {
@@ -79,7 +79,7 @@ async function cmdAdd(args: string[]): Promise<void> {
       "Options: --summary <text> --tags <tag1,tag2> --priority <high|normal|low>",
     );
     console.log(
-      "         --refinement <raw|refined|autonomous> --parent <id> --depends-on <id1,id2>",
+      "         --refinement <raw|proposed|refined|autonomous> --parent <id> --depends-on <id1,id2>",
     );
     console.log("         --idea <idea-id>");
     return;
@@ -93,7 +93,7 @@ async function cmdAdd(args: string[]): Promise<void> {
       "Options: --summary <text> --tags <tag1,tag2> --priority <high|normal|low>",
     );
     console.error(
-      "         --refinement <raw|refined|autonomous> --parent <id> --depends-on <id1,id2>",
+      "         --refinement <raw|proposed|refined|autonomous> --parent <id> --depends-on <id1,id2>",
     );
     console.error("         --idea <idea-id>");
     process.exit(1);
@@ -105,7 +105,7 @@ async function cmdAdd(args: string[]): Promise<void> {
     .map((t) => t.trim())
     .filter(Boolean) ?? [];
   const validPriorities: TaskPriority[] = ["high", "normal", "low"];
-  const validRefinements: TaskRefinement[] = ["raw", "refined", "autonomous"];
+  const validRefinements: TaskRefinement[] = ["raw", "proposed", "refined", "autonomous"];
   const priority = validateEnum(parseFlag(args, "--priority") ?? "normal", validPriorities, "priority");
   const refinement = validateEnum(parseFlag(args, "--refinement") ?? "raw", validRefinements, "refinement");
   const parentId = parseFlag(args, "--parent") ?? null;
@@ -486,6 +486,7 @@ const STATUS_ICON: Record<string, string> = {
 
 const REFINEMENT_ICON: Record<string, string> = {
   raw: "~",
+  proposed: "◐",
   refined: "◎",
 };
 
