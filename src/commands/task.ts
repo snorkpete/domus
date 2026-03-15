@@ -556,7 +556,7 @@ async function cmdOverview(args: string[]): Promise<void> {
   }
 
   if (supervised.length > 0) {
-    console.log(sectionHeader("Supervised"));
+    console.log(sectionHeader("Outstanding - Supervised"));
     for (const t of supervised) {
       console.log(formatSupervised(t));
     }
@@ -564,7 +564,7 @@ async function cmdOverview(args: string[]): Promise<void> {
   }
 
   if (autonomous.length > 0) {
-    console.log(sectionHeader("Autonomous"));
+    console.log(sectionHeader("Outstanding - Autonomous"));
     for (const t of autonomous) {
       console.log(formatAutonomous(t));
     }
