@@ -604,7 +604,7 @@ function cmdWatch(args: string[]): void {
     process.exit(1);
   }
 
-  const interval = parseFlag(args, "--interval") ?? "15";
+  const interval = parseFlag(args, "--interval") ?? "10";
   const passthroughArgs = args.filter((a, i) => a !== "--interval" && args[i - 1] !== "--interval");
   const domusBin = Bun.which("domus") ?? "domus";
   const result = Bun.spawnSync(

@@ -1,8 +1,8 @@
 # Task: Split domus task and idea commands into multiple files
 
 **ID:** split-domus-task-and-idea-commands-into-multiple-files
-**Status:** cancelled
-**Refinement:** refined
+**Status:** open
+**Refinement:** proposed
 **Priority:** normal
 **Captured:** 2026-03-14
 **Parent:** none
