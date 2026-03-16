@@ -683,7 +683,7 @@ test("overview: status icons appear for open and in-progress", async () => {
   expect(output).toContain("◑"); // in-progress
 });
 
-test("overview: default hides blocked tasks", async () => {
+test("overview: blocked tasks appear in Blocked section, not Supervised/Autonomous", async () => {
   await runTask(["add", "--title", "Blocker"]);
   await runTask(["add", "--title", "Blocked Task", "--depends-on", "blocker"]);
 
@@ -694,26 +694,79 @@ test("overview: default hides blocked tasks", async () => {
     out.restore();
   }
   const output = stripAnsi(out.lines().join("\n"));
+  expect(output).toContain("Blocked");
+  expect(output).toContain("blocked-task");
+  // blocker (unresolved dep) appears indented under blocked-task
   expect(output).toContain("blocker");
-  expect(output).not.toContain("blocked-task");
+  // blocked-task must NOT appear under Supervised or Autonomous sections
+  const supervisedIdx = output.indexOf("Supervised");
+  const blockedSectionIdx = output.indexOf("Blocked");
+  if (supervisedIdx !== -1 && supervisedIdx > blockedSectionIdx) {
+    const supervisedSection = output.slice(supervisedIdx);
+    expect(supervisedSection).not.toContain("blocked-task");
+  }
 });
 
-test("overview: --blocked shows blocked tasks with their blockers", async () => {
-  await runTask(["add", "--title", "Blocker"]);
-  await runTask(["add", "--title", "Blocked Task", "--depends-on", "blocker"]);
+test("overview: blocked section shows tree with unresolved deps indented", async () => {
+  await runTask(["add", "--title", "Dep A"]);
+  await runTask(["add", "--title", "Dep B"]);
+  await runTask(["add", "--title", "Blocked Task", "--depends-on", "dep-a,dep-b"]);
 
   const out = captureOutput();
   try {
-    await runTask(["overview", "--blocked"]);
+    await runTask(["overview"]);
+  } finally {
+    out.restore();
+  }
+  const lines = out.lines().map(stripAnsi);
+  const blockedTaskLineIdx = lines.findIndex((l) => l.includes("blocked-task"));
+  expect(blockedTaskLineIdx).toBeGreaterThanOrEqual(0);
+  // Indented blocker lines follow immediately
+  const depALine = lines[blockedTaskLineIdx + 1];
+  const depBLine = lines[blockedTaskLineIdx + 2];
+  expect(depALine).toContain("dep-a");
+  expect(depBLine).toContain("dep-b");
+  // Indented lines start with whitespace/bullet
+  expect(depALine.startsWith("  ·") || depALine.startsWith("  ")).toBe(true);
+});
+
+test("overview: display order is Autonomous then Blocked then Supervised", async () => {
+  await runTask(["add", "--title", "Supervised Task", "--refinement", "refined"]);
+  await runTask(["add", "--title", "Auto Task", "--refinement", "autonomous"]);
+  await runTask(["add", "--title", "Blocker Task"]);
+  await runTask(["add", "--title", "Blocked Task", "--depends-on", "blocker-task"]);
+
+  const out = captureOutput();
+  try {
+    await runTask(["overview"]);
   } finally {
     out.restore();
   }
   const output = stripAnsi(out.lines().join("\n"));
-  expect(output).toContain("blocked-task");
-  expect(output).toContain("blocker");
-  // The blocked task line should mention its dependency
-  const blockedLine = output.split("\n").find((l) => l.includes("blocked-task"));
-  expect(blockedLine).toContain("blocker");
+  const autoIdx = output.indexOf("Autonomous");
+  const blockedIdx = output.indexOf("Blocked");
+  const supervisedIdx = output.indexOf("Supervised");
+  expect(autoIdx).toBeGreaterThanOrEqual(0);
+  expect(blockedIdx).toBeGreaterThan(autoIdx);
+  expect(supervisedIdx).toBeGreaterThan(blockedIdx);
+});
+
+test("overview: blocked task row uses full icon format (priority + refinement + status)", async () => {
+  await runTask(["add", "--title", "Blocker"]);
+  await runTask(["add", "--title", "Blocked Task", "--depends-on", "blocker", "--refinement", "raw", "--priority", "high"]);
+
+  const out = captureOutput();
+  try {
+    await runTask(["overview"]);
+  } finally {
+    out.restore();
+  }
+  const lines = out.lines().map(stripAnsi);
+  const blockedLine = lines.find((l) => l.includes("blocked-task") && !l.startsWith("  "));
+  expect(blockedLine).toBeDefined();
+  expect(blockedLine).toContain("▲"); // high priority
+  expect(blockedLine).toContain("~"); // raw refinement icon
+  expect(blockedLine).toContain("○"); // open status
 });
 
 test("overview: empty list prints 'No tasks'", async () => {

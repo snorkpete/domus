@@ -518,7 +518,6 @@ function sectionHeader(label: string): string {
 
 async function cmdOverview(args: string[]): Promise<void> {
   const includeDone = hasFlag(args, "--include-done");
-  const includeBlocked = hasFlag(args, "--blocked");
   const interval = parseFlag(args, "--interval");
 
   const root = projectRoot();
@@ -534,24 +533,24 @@ async function cmdOverview(args: string[]): Promise<void> {
   const visibleStatuses = new Set<TaskStatus>(["open", "in-progress"]);
   if (includeDone) visibleStatuses.add("done");
 
-  // Separate blocked from unblocked for default display
-  const supervised: TaskEntry[] = [];
+  // Separate blocked from unblocked, then split unblocked by refinement
   const autonomous: TaskEntry[] = [];
+  const blocked: TaskEntry[] = [];
+  const supervised: TaskEntry[] = [];
 
   for (const t of tasks) {
     if (!visibleStatuses.has(t.status)) continue;
 
-    const blocked = isBlocked(t, done);
-    if (blocked && !includeBlocked) continue;
-
-    if (t.refinement === "autonomous") {
+    if (isBlocked(t, done)) {
+      blocked.push(t);
+    } else if (t.refinement === "autonomous") {
       autonomous.push(t);
     } else {
       supervised.push(t);
     }
   }
 
-  const hasAny = supervised.length > 0 || autonomous.length > 0;
+  const hasAny = autonomous.length > 0 || blocked.length > 0 || supervised.length > 0;
 
   if (interval) {
     console.log(ansi("2", `↻ ${interval}s`));
@@ -562,37 +561,68 @@ async function cmdOverview(args: string[]): Promise<void> {
     return;
   }
 
-  function formatSupervised(t: TaskEntry): string {
+  function formatRow(t: TaskEntry): string {
     const pIcon = priorityAnsi(PRIORITY_ICON[t.priority] ?? "·", t.priority);
-    const rIcon = REFINEMENT_ICON[t.refinement] ?? "?";
+    const rIcon = t.refinement !== "autonomous" ? ` ${REFINEMENT_ICON[t.refinement] ?? "?"}` : " ";
     const sIcon = statusAnsi(STATUS_ICON[t.status] ?? "?", t.status);
-    const blockedSuffix = includeBlocked && isBlocked(t, done)
-      ? ansi("33", ` ⊘ waiting on: ${t.depends_on.filter((d) => !done.has(d)).join(", ")}`)
-      : "";
-    return lineAnsi(`${pIcon} ${rIcon} ${sIcon}  ${t.id}${blockedSuffix}`, t.status);
+    return lineAnsi(`${pIcon}${rIcon} ${sIcon}  ${t.id}`, t.status);
+  }
+
+  function formatSupervised(t: TaskEntry): string {
+    return formatRow(t);
   }
 
   function formatAutonomous(t: TaskEntry): string {
     const pIcon = priorityAnsi(PRIORITY_ICON[t.priority] ?? "·", t.priority);
     const sIcon = statusAnsi(STATUS_ICON[t.status] ?? "?", t.status);
-    const blockedSuffix = includeBlocked && isBlocked(t, done)
-      ? ansi("33", ` ⊘ waiting on: ${t.depends_on.filter((d) => !done.has(d)).join(", ")}`)
-      : "";
-    return lineAnsi(`${pIcon} ${sIcon}  ${t.id}${blockedSuffix}`, t.status);
+    return lineAnsi(`${pIcon}   ${sIcon}  ${t.id}`, t.status);
+  }
+
+  function formatBlockedTree(t: TaskEntry, taskMap: Map<string, TaskEntry>): string[] {
+    const pIcon = priorityAnsi(PRIORITY_ICON[t.priority] ?? "·", t.priority);
+    const rIcon = t.refinement !== "autonomous" ? ` ${REFINEMENT_ICON[t.refinement] ?? "?"}` : " ";
+    const sIcon = statusAnsi(STATUS_ICON[t.status] ?? "?", t.status);
+    const lines: string[] = [];
+    lines.push(lineAnsi(`${pIcon}${rIcon} ${sIcon}  ${t.id}`, t.status));
+    const unresolvedDeps = t.depends_on.filter((dep) => !done.has(dep));
+    for (const depId of unresolvedDeps) {
+      const dep = taskMap.get(depId);
+      if (dep) {
+        const dPIcon = priorityAnsi(PRIORITY_ICON[dep.priority] ?? "·", dep.priority);
+        const dRIcon = dep.refinement !== "autonomous" ? ` ${REFINEMENT_ICON[dep.refinement] ?? "?"}` : " ";
+        const dSIcon = statusAnsi(STATUS_ICON[dep.status] ?? "?", dep.status);
+        lines.push(lineAnsi(`  · ${dPIcon}${dRIcon} ${dSIcon}  ${dep.id}`, dep.status));
+      } else {
+        lines.push(`  · ${depId}`);
+      }
+    }
+    return lines;
+  }
+
+  const taskMap = new Map(tasks.map((t) => [t.id, t]));
+
+  if (autonomous.length > 0) {
+    console.log(sectionHeader("Outstanding - Autonomous"));
+    for (const t of autonomous) {
+      console.log(formatAutonomous(t));
+    }
+    if (blocked.length > 0 || supervised.length > 0) console.log();
+  }
+
+  if (blocked.length > 0) {
+    console.log(sectionHeader("Blocked"));
+    for (const t of blocked) {
+      for (const line of formatBlockedTree(t, taskMap)) {
+        console.log(line);
+      }
+    }
+    if (supervised.length > 0) console.log();
   }
 
   if (supervised.length > 0) {
     console.log(sectionHeader("Outstanding - Supervised"));
     for (const t of supervised) {
       console.log(formatSupervised(t));
-    }
-    if (autonomous.length > 0) console.log();
-  }
-
-  if (autonomous.length > 0) {
-    console.log(sectionHeader("Outstanding - Autonomous"));
-    for (const t of autonomous) {
-      console.log(formatAutonomous(t));
     }
   }
 }
@@ -624,10 +654,10 @@ Usage:
   domus task status <id> <new-status> [--note <text>]
   domus task update <id> [--title <title>] [--summary <text>] [--tags <tag1,tag2>] [--priority <priority>] [--refinement <refinement>] [--note <text>] [--parent <id>] [--idea <id>]
   domus task show <id>
-  domus task overview [--include-done] [--blocked]
+  domus task overview [--include-done]
   domus task ready
   domus task list [--status <status>] [--json]
-  domus task watch [--interval <seconds>] [--include-done] [--blocked]
+  domus task watch [--interval <seconds>] [--include-done]
 
 Subcommands:
   add       Create a new task (writes to .domus/tasks/)
