@@ -1,7 +1,7 @@
 # Task: add docs/cli-reference.md with domus CLI usage patterns
 
 **ID:** add-docscli-referencemd-with-domus-cli-usage-patterns
-**Status:** open
+**Status:** done
 **Refinement:** proposed
 **Priority:** high
 **Captured:** 2026-03-16

@@ -1,7 +1,7 @@
 # Task: fix skill frontmatter triggers to cover agent-invocation scenarios
 
 **ID:** fix-skill-frontmatter-triggers-to-cover-agent-invocation-scenarios
-**Status:** open
+**Status:** done
 **Refinement:** proposed
 **Priority:** high
 **Captured:** 2026-03-16

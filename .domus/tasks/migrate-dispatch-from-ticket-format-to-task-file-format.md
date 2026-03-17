@@ -1,7 +1,7 @@
 # Task: migrate dispatch from ticket format to task file format
 
 **ID:** migrate-dispatch-from-ticket-format-to-task-file-format
-**Status:** open
+**Status:** done
 **Refinement:** proposed
 **Priority:** high
 **Captured:** 2026-03-16

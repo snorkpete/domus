@@ -1,7 +1,7 @@
 # Task: add blocked section to domus task overview
 
 **ID:** add-blocked-section-to-domus-task-overview
-**Status:** open
+**Status:** done
 **Refinement:** autonomous
 **Priority:** normal
 **Captured:** 2026-03-16

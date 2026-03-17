@@ -2,7 +2,7 @@
 
 **ID:** refactor-domus-init-to-install-template-files-from-source-instead-of-embedded-strings
 **Status:** open
-**Refinement:** proposed
+**Refinement:** autonomous
 **Priority:** high
 **Captured:** 2026-03-16
 **Parent:** none
@@ -36,9 +36,45 @@ Also add installation of `.domus/reference/agent-instructions.md` — the domus 
 
 Pattern for file-based embedding in Bun (works in both dev and compiled binary):
 ```ts
-const content = await Bun.file(new URL("../../src/templates/tags/shared.md", import.meta.url)).text();
+const content = await Bun.file(new URL("../templates/tags/shared.md", import.meta.url)).text();
 ```
 
-Source for `agent-instructions.md` template: `.domus/reference/agent-instructions.md` in this repo is the canonical file — copy it to `src/templates/domus/reference/agent-instructions.md` as the template path, or reference it directly if the path works cleanly.
+(`import.meta.url` is relative to `src/commands/init.ts`, so `../templates/` = `src/templates/`.)
 
-Existing `SEED_FILES` entries to migrate: `tags/shared.md`, `tags/ideas.md`, `tags/tasks.md`, `ideas/ideas.jsonl`, `tasks/tasks.jsonl`.
+**Template directory layout** — mirror `.domus/` structure under `src/templates/`:
+```
+src/templates/
+  tags/shared.md
+  tags/ideas.md
+  tags/tasks.md
+  ideas/ideas.jsonl
+  tasks/tasks.jsonl
+  reference/agent-instructions.md   ← copy from .domus/reference/agent-instructions.md
+```
+
+**Seed map after migration:**
+```ts
+async function buildSeedFiles(): Promise<Record<string, string>> {
+  return {
+    ".domus/tags/shared.md":                    await Bun.file(new URL("../templates/tags/shared.md", import.meta.url)).text(),
+    ".domus/tags/ideas.md":                     await Bun.file(new URL("../templates/tags/ideas.md", import.meta.url)).text(),
+    ".domus/tags/tasks.md":                     await Bun.file(new URL("../templates/tags/tasks.md", import.meta.url)).text(),
+    ".domus/ideas/ideas.jsonl":                 await Bun.file(new URL("../templates/ideas/ideas.jsonl", import.meta.url)).text(),
+    ".domus/tasks/tasks.jsonl":                 await Bun.file(new URL("../templates/tasks/tasks.jsonl", import.meta.url)).text(),
+    ".domus/reference/agent-instructions.md":   await Bun.file(new URL("../templates/reference/agent-instructions.md", import.meta.url)).text(),
+  };
+}
+```
+
+Replace the `SEED_FILES` constant with a call to `buildSeedFiles()` inside `runInit`.
+
+**New test to add** (alongside existing tests in `init.test.ts`):
+```ts
+test("installs .domus/reference/agent-instructions.md", async () => {
+  await runInit([], { projectPath: tempDir });
+  const content = await readFile(join(tempDir, ".domus/reference/agent-instructions.md"), "utf-8");
+  expect(content.length).toBeGreaterThan(0);
+});
+```
+
+**Existing test coverage:** All 9 existing tests must continue to pass unchanged — they check directory creation, seed file content, settings.json merging, idempotency, and permission deduplication.

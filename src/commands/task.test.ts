@@ -159,7 +159,7 @@ test("status: sets date_done when marking done", async () => {
 
 test("status: saves outcome note", async () => {
   await runTask(["add", "--title", "My Task"]);
-  await runTask(["status", "my-task", "cancelled", "--note", "Not needed"]);
+  await runTask(["status", "my-task", "cancelled", "--outcome", "Not needed"]);
 
   const tasks = await readTasksJsonl();
   expect(tasks[0].outcome_note).toBe("Not needed");
@@ -456,9 +456,25 @@ test("update: --depends-on is idempotent", async () => {
   expect(dep.depends_on).toEqual(["blocker"]);
 });
 
-test("update: --note updates outcome_note in JSONL", async () => {
+test("add: --note sets initial notes array", async () => {
+  await runTask(["add", "--title", "My Task", "--note", "First observation"]);
+
+  const tasks = await readTasksJsonl();
+  expect(tasks[0].notes).toEqual(["First observation"]);
+});
+
+test("update: --note appends to notes array", async () => {
+  await runTask(["add", "--title", "My Task", "--note", "First"]);
+  await runTask(["update", "my-task", "--note", "Second"]);
+  await runTask(["update", "my-task", "--note", "Third"]);
+
+  const tasks = await readTasksJsonl();
+  expect(tasks[0].notes).toEqual(["First", "Second", "Third"]);
+});
+
+test("update: --outcome updates outcome_note in JSONL", async () => {
   await runTask(["add", "--title", "My Task"]);
-  await runTask(["update", "my-task", "--note", "Completed with caveat"]);
+  await runTask(["update", "my-task", "--outcome", "Completed with caveat"]);
 
   const tasks = await readTasksJsonl();
   expect(tasks[0].outcome_note).toBe("Completed with caveat");
@@ -514,11 +530,11 @@ test("update: --idea empty string clears idea_id", async () => {
   expect(md).toContain("**Idea:** none");
 });
 
-test("update: --note alone does not trigger 'nothing to update' exit", async () => {
+test("update: --outcome alone does not trigger 'nothing to update' exit", async () => {
   await runTask(["add", "--title", "My Task"]);
   const trap = trapExit();
   try {
-    await runTask(["update", "my-task", "--note", "some note"]);
+    await runTask(["update", "my-task", "--outcome", "some note"]);
   } catch {
     // ignore thrown exit
   } finally {

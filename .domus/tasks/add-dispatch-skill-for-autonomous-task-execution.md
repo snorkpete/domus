@@ -1,7 +1,7 @@
 # Task: Add dispatch skill for autonomous task execution
 
 **ID:** add-dispatch-skill-for-autonomous-task-execution
-**Status:** open
+**Status:** cancelled
 **Refinement:** raw
 **Priority:** normal
 **Captured:** 2026-03-15

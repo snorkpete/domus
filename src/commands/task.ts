@@ -2,73 +2,27 @@ import { existsSync } from "node:fs";
 import { readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { parseFlag, hasFlag, toKebabCase, uniqueId, validateEnum } from "../lib/args.ts";
+import { today, projectRoot, DOMUS_DIR, updateMarkdownStatus } from "../lib/jsonl.ts";
 import {
-  today,
-  projectRoot,
-  DOMUS_DIR,
-  readJsonl,
-  writeJsonl,
-  updateMarkdownStatus,
-} from "../lib/jsonl.ts";
-
-// ── Types ────────────────────────────────────────────────────────────────────
-
-type TaskStatus = "open" | "in-progress" | "done" | "cancelled" | "deferred";
-type TaskRefinement = "raw" | "proposed" | "refined" | "autonomous";
-type TaskPriority = "high" | "normal" | "low";
-
-type TaskEntry = {
-  id: string;
-  title: string;
-  file: string;
-  date_captured: string;
-  status: TaskStatus;
-  refinement: TaskRefinement;
-  priority: TaskPriority;
-  parent_id: string | null;
-  depends_on: string[];
-  idea_id: string | null;
-  spec_refs: string[];
-  tags: string[];
-  summary: string;
-  date_status_changed: string | null;
-  date_done: string | null;
-  outcome_note: string | null;
-};
-
-// ── Store helpers ─────────────────────────────────────────────────────────────
-
-function tasksJsonlPath(root: string): string {
-  return join(root, DOMUS_DIR, "tasks", "tasks.jsonl");
-}
-
-function tasksDir(root: string): string {
-  return join(root, DOMUS_DIR, "tasks");
-}
-
-async function readTasks(root: string): Promise<TaskEntry[]> {
-  return readJsonl<TaskEntry>(tasksJsonlPath(root));
-}
-
-async function writeTasks(root: string, tasks: TaskEntry[]): Promise<void> {
-  return writeJsonl(tasksJsonlPath(root), tasksDir(root), tasks);
-}
-
-// ── Computed queries ─────────────────────────────────────────────────────────
-
-function doneIds(tasks: TaskEntry[]): Set<string> {
-  return new Set(tasks.filter((t) => t.status === "done").map((t) => t.id));
-}
-
-function isReady(task: TaskEntry, done: Set<string>): boolean {
-  if (task.status !== "open" && task.status !== "in-progress") return false;
-  return task.depends_on.every((dep) => done.has(dep));
-}
-
-function isBlocked(task: TaskEntry, done: Set<string>): boolean {
-  if (task.status !== "open" && task.status !== "in-progress") return false;
-  return task.depends_on.some((dep) => !done.has(dep));
-}
+  type TaskEntry,
+  type TaskStatus,
+  VALID_STATUSES,
+  VALID_REFINEMENTS,
+  VALID_PRIORITIES,
+  readTasks,
+  writeTasks,
+  doneIds,
+  isReady,
+  isBlocked,
+} from "../lib/task-store.ts";
+import { updateBoldField, updateMarkdownTitle, updateSection } from "../lib/markdown.ts";
+import {
+  ansi,
+  sectionHeader,
+  formatRow,
+  formatAutonomousRow,
+  formatBlockedTree,
+} from "./task-display.ts";
 
 // ── Subcommands ──────────────────────────────────────────────────────────────
 
@@ -81,7 +35,7 @@ async function cmdAdd(args: string[]): Promise<void> {
     console.log(
       "         --refinement <raw|proposed|refined|autonomous> --parent <id> --depends-on <id1,id2>",
     );
-    console.log("         --idea <idea-id>");
+    console.log("         --idea <idea-id> --outcome <text> --note <text>");
     return;
   }
 
@@ -95,7 +49,7 @@ async function cmdAdd(args: string[]): Promise<void> {
     console.error(
       "         --refinement <raw|proposed|refined|autonomous> --parent <id> --depends-on <id1,id2>",
     );
-    console.error("         --idea <idea-id>");
+    console.error("         --idea <idea-id> --outcome <text> --note <text>");
     process.exit(1);
   }
 
@@ -104,10 +58,8 @@ async function cmdAdd(args: string[]): Promise<void> {
     ?.split(",")
     .map((t) => t.trim())
     .filter(Boolean) ?? [];
-  const validPriorities: TaskPriority[] = ["high", "normal", "low"];
-  const validRefinements: TaskRefinement[] = ["raw", "proposed", "refined", "autonomous"];
-  const priority = validateEnum(parseFlag(args, "--priority") ?? "normal", validPriorities, "priority");
-  const refinement = validateEnum(parseFlag(args, "--refinement") ?? "raw", validRefinements, "refinement");
+  const priority = validateEnum(parseFlag(args, "--priority") ?? "normal", VALID_PRIORITIES, "priority");
+  const refinement = validateEnum(parseFlag(args, "--refinement") ?? "raw", VALID_REFINEMENTS, "refinement");
   const parentId = parseFlag(args, "--parent") ?? null;
   const dependsOn =
     parseFlag(args, "--depends-on")
@@ -115,6 +67,8 @@ async function cmdAdd(args: string[]): Promise<void> {
       .map((d) => d.trim())
       .filter(Boolean) ?? [];
   const ideaId = parseFlag(args, "--idea") ?? null;
+  const outcomeNote = parseFlag(args, "--outcome") ?? null;
+  const note = parseFlag(args, "--note");
 
   const tasks = await readTasks(root);
   const existingIds = tasks.map((t) => t.id);
@@ -137,15 +91,15 @@ async function cmdAdd(args: string[]): Promise<void> {
     spec_refs: [],
     tags,
     summary,
+    notes: note ? [note] : [],
     date_status_changed: dateToday,
     date_done: null,
-    outcome_note: null,
+    outcome_note: outcomeNote,
   };
 
   tasks.push(entry);
   await writeTasks(root, tasks);
 
-  // Create detail file
   const detailPath = join(root, file);
   const dependsOnStr = dependsOn.length > 0 ? dependsOn.join(", ") : "none";
   const detailContent = `# Task: ${title}
@@ -187,7 +141,7 @@ _Remove if empty._
 
 async function cmdStatus(args: string[]): Promise<void> {
   if (hasFlag(args, "--help") || hasFlag(args, "-h")) {
-    console.log("Usage: domus task status <id> <open|in-progress|done|cancelled|deferred> [--note <text>]");
+    console.log("Usage: domus task status <id> <open|in-progress|done|cancelled|deferred> [--outcome <text>]");
     return;
   }
 
@@ -201,21 +155,14 @@ async function cmdStatus(args: string[]): Promise<void> {
     process.exit(1);
   }
 
-  const validStatuses: TaskStatus[] = [
-    "open",
-    "in-progress",
-    "done",
-    "cancelled",
-    "deferred",
-  ];
-  if (!validStatuses.includes(newStatus as TaskStatus)) {
+  if (!VALID_STATUSES.includes(newStatus as TaskStatus)) {
     console.error(
-      `Invalid status: ${newStatus}. Must be one of: ${validStatuses.join(", ")}`,
+      `Invalid status: ${newStatus}. Must be one of: ${VALID_STATUSES.join(", ")}`,
     );
     process.exit(1);
   }
 
-  const outcomeNote = parseFlag(args, "--note") ?? null;
+  const outcomeNote = parseFlag(args, "--outcome") ?? null;
   const tasks = await readTasks(root);
   const task = tasks.find((t) => t.id === id);
 
@@ -231,15 +178,14 @@ async function cmdStatus(args: string[]): Promise<void> {
   if (newStatus === "done") {
     task.date_done = today();
   }
-  if (outcomeNote) {
-    task.outcome_note = outcomeNote;
+  if (outcomeNote !== null) {
+    task.outcome_note = outcomeNote || null;
   }
 
   await writeTasks(root, tasks);
   await updateMarkdownStatus(join(root, task.file), newStatus);
   console.log(`Task ${id}: ${oldStatus} → ${newStatus}`);
 
-  // Surface parent completion hint
   if (newStatus === "done" && task.parent_id) {
     const siblings = tasks.filter((t) => t.parent_id === task.parent_id);
     const allDone = siblings.every(
@@ -388,7 +334,7 @@ async function cmdShow(args: string[]): Promise<void> {
 
 async function cmdUpdate(args: string[]): Promise<void> {
   if (hasFlag(args, "--help") || hasFlag(args, "-h")) {
-    console.log("Usage: domus task update <id> [--title <title>] [--summary <text>] [--tags <tag1,tag2>] [--priority <priority>] [--refinement <refinement>] [--depends-on <id1,id2>] [--note <text>] [--parent <id>] [--idea <id>]");
+    console.log("Usage: domus task update <id> [--title <title>] [--summary <text>] [--tags <tag1,tag2>] [--priority <priority>] [--refinement <refinement>] [--depends-on <id1,id2>] [--outcome <text>] [--note <text>] [--parent <id>] [--idea <id>]");
     return;
   }
 
@@ -396,7 +342,7 @@ async function cmdUpdate(args: string[]): Promise<void> {
   const [id] = args;
 
   if (!id) {
-    console.error("Usage: domus task update <id> [--title <title>] [--summary <text>] [--tags <tag1,tag2>] [--priority <priority>] [--refinement <refinement>] [--depends-on <id1,id2>] [--note <text>] [--parent <id>] [--idea <id>]");
+    console.error("Usage: domus task update <id> [--title <title>] [--summary <text>] [--tags <tag1,tag2>] [--priority <priority>] [--refinement <refinement>] [--depends-on <id1,id2>] [--outcome <text>] [--note <text>] [--parent <id>] [--idea <id>]");
     process.exit(1);
   }
 
@@ -411,14 +357,19 @@ async function cmdUpdate(args: string[]): Promise<void> {
   const newTitle = parseFlag(args, "--title");
   const newSummary = parseFlag(args, "--summary");
   const newTags = parseFlag(args, "--tags")?.split(",").map((t) => t.trim()).filter(Boolean);
-  const newPriority = parseFlag(args, "--priority") as TaskPriority | undefined;
-  const newRefinement = parseFlag(args, "--refinement") as TaskRefinement | undefined;
+  const newPriority = parseFlag(args, "--priority");
+  const newRefinement = parseFlag(args, "--refinement");
   const newDependsOn = parseFlag(args, "--depends-on");
+  const newOutcome = parseFlag(args, "--outcome");
   const newNote = parseFlag(args, "--note");
   const newParent = parseFlag(args, "--parent");
   const newIdea = parseFlag(args, "--idea");
 
-  if (!newTitle && !newSummary && !newTags && !newPriority && !newRefinement && newDependsOn === undefined && !newNote && newParent === undefined && newIdea === undefined) {
+  const hasUpdate = newTitle || newSummary || newTags || newPriority || newRefinement ||
+    newDependsOn !== undefined || newOutcome !== undefined || newNote ||
+    newParent !== undefined || newIdea !== undefined;
+
+  if (!hasUpdate) {
     console.error("Nothing to update. Provide at least one flag.");
     process.exit(1);
   }
@@ -426,37 +377,36 @@ async function cmdUpdate(args: string[]): Promise<void> {
   if (newTitle) task.title = newTitle;
   if (newSummary) task.summary = newSummary;
   if (newTags) task.tags = newTags;
-  if (newPriority) task.priority = newPriority;
-  if (newRefinement) task.refinement = newRefinement;
+  if (newPriority) task.priority = validateEnum(newPriority, VALID_PRIORITIES, "priority");
+  if (newRefinement) task.refinement = validateEnum(newRefinement, VALID_REFINEMENTS, "refinement");
   if (newDependsOn !== undefined) {
     task.depends_on = newDependsOn
       .split(",")
       .map((d) => d.trim())
       .filter(Boolean);
   }
-  if (newNote) task.outcome_note = newNote;
+  if (newOutcome !== undefined) task.outcome_note = newOutcome || null;
+  if (newNote) task.notes = [...task.notes, newNote];
   if (newParent !== undefined) task.parent_id = newParent || null;
   if (newIdea !== undefined) task.idea_id = newIdea || null;
 
   await writeTasks(root, tasks);
 
-  // Sync .md file for fields that appear in the header
   const filePath = join(root, task.file);
-  if (existsSync(filePath)) {
+  if (!existsSync(filePath)) {
+    console.warn(`Warning: markdown file not found, JSONL updated but .md not synced: ${filePath}`);
+  } else {
     let content = await readFile(filePath, "utf-8");
-    if (newTitle) content = content.replace(/^# Task: .+$/m, `# Task: ${newTitle}`);
-    if (newPriority) content = content.replace(/^\*\*Priority:\*\* .+$/m, `**Priority:** ${newPriority}`);
-    if (newRefinement) content = content.replace(/^\*\*Refinement:\*\* .+$/m, `**Refinement:** ${newRefinement}`);
+    if (newTitle) content = updateMarkdownTitle(content, "Task", newTitle);
+    if (newPriority) content = updateBoldField(content, "Priority", task.priority);
+    if (newRefinement) content = updateBoldField(content, "Refinement", task.refinement);
     if (newDependsOn !== undefined) {
       const depsStr = task.depends_on.length > 0 ? task.depends_on.join(", ") : "none";
-      content = content.replace(/^\*\*Depends on:\*\* .+$/m, `**Depends on:** ${depsStr}`);
+      content = updateBoldField(content, "Depends on", depsStr);
     }
-    if (newParent !== undefined) {
-      content = content.replace(/^\*\*Parent:\*\* .+$/m, `**Parent:** ${task.parent_id ?? "none"}`);
-    }
-    if (newIdea !== undefined) {
-      content = content.replace(/^\*\*Idea:\*\* .+$/m, `**Idea:** ${task.idea_id ?? "none"}`);
-    }
+    if (newParent !== undefined) content = updateBoldField(content, "Parent", task.parent_id ?? "none");
+    if (newIdea !== undefined) content = updateBoldField(content, "Idea", task.idea_id ?? "none");
+    if (newSummary) content = updateSection(content, "What This Task Is", newSummary);
     await writeFile(filePath, content, "utf-8");
   }
 
@@ -464,57 +414,6 @@ async function cmdUpdate(args: string[]): Promise<void> {
 }
 
 // ── Overview ──────────────────────────────────────────────────────────────────
-
-function ansi(code: string, text: string): string {
-  return `\x1b[${code}m${text}\x1b[0m`;
-}
-
-const PRIORITY_ICON: Record<TaskPriority, string> = {
-  high: "▲",
-  normal: "·",
-  low: "▼",
-};
-
-const STATUS_ICON: Record<string, string> = {
-  open: "○",
-  "in-progress": "◑",
-  done: "●",
-  cancelled: "✕",
-  deferred: "⏸",
-  blocked: "⊘",
-};
-
-const REFINEMENT_ICON: Record<string, string> = {
-  raw: "~",
-  proposed: "◐",
-  refined: "◎",
-};
-
-function priorityAnsi(icon: string, priority: TaskPriority): string {
-  if (priority === "high") return ansi("33;1", icon); // yellow bold
-  if (priority === "low") return ansi("2", icon);     // dim
-  return icon;
-}
-
-function statusAnsi(icon: string, status: TaskStatus): string {
-  if (status === "in-progress") return ansi("36", icon); // cyan
-  if (status === "done") return ansi("32", icon);        // green
-  if (status === "cancelled") return ansi("2", icon);    // dim
-  return icon;
-}
-
-function lineAnsi(line: string, status: TaskStatus): string {
-  const code = status === "in-progress" ? "36" : status === "done" ? "2" : null;
-  if (!code) return line;
-  // Re-apply the line color after every inner reset so nested icon codes don't break it
-  const reapply = `\x1b[0m\x1b[${code}m`;
-  return `\x1b[${code}m${line.replace(/\x1b\[0m/g, reapply)}\x1b[0m`;
-}
-
-function sectionHeader(label: string): string {
-  const line = "─".repeat(48 - label.length - 4);
-  return ansi("2", `── ${label} ${line}`);
-}
 
 async function cmdOverview(args: string[]): Promise<void> {
   const includeDone = hasFlag(args, "--include-done");
@@ -533,7 +432,6 @@ async function cmdOverview(args: string[]): Promise<void> {
   const visibleStatuses = new Set<TaskStatus>(["open", "in-progress"]);
   if (includeDone) visibleStatuses.add("done");
 
-  // Separate blocked from unblocked, then split unblocked by refinement
   const autonomous: TaskEntry[] = [];
   const blocked: TaskEntry[] = [];
   const supervised: TaskEntry[] = [];
@@ -561,50 +459,12 @@ async function cmdOverview(args: string[]): Promise<void> {
     return;
   }
 
-  function formatRow(t: TaskEntry): string {
-    const pIcon = priorityAnsi(PRIORITY_ICON[t.priority] ?? "·", t.priority);
-    const rIcon = t.refinement !== "autonomous" ? ` ${REFINEMENT_ICON[t.refinement] ?? "?"}` : " ";
-    const sIcon = statusAnsi(STATUS_ICON[t.status] ?? "?", t.status);
-    return lineAnsi(`${pIcon}${rIcon} ${sIcon}  ${t.id}`, t.status);
-  }
-
-  function formatSupervised(t: TaskEntry): string {
-    return formatRow(t);
-  }
-
-  function formatAutonomous(t: TaskEntry): string {
-    const pIcon = priorityAnsi(PRIORITY_ICON[t.priority] ?? "·", t.priority);
-    const sIcon = statusAnsi(STATUS_ICON[t.status] ?? "?", t.status);
-    return lineAnsi(`${pIcon}   ${sIcon}  ${t.id}`, t.status);
-  }
-
-  function formatBlockedTree(t: TaskEntry, taskMap: Map<string, TaskEntry>): string[] {
-    const pIcon = priorityAnsi(PRIORITY_ICON[t.priority] ?? "·", t.priority);
-    const rIcon = t.refinement !== "autonomous" ? ` ${REFINEMENT_ICON[t.refinement] ?? "?"}` : " ";
-    const sIcon = statusAnsi(STATUS_ICON[t.status] ?? "?", t.status);
-    const lines: string[] = [];
-    lines.push(lineAnsi(`${pIcon}${rIcon} ${sIcon}  ${t.id}`, t.status));
-    const unresolvedDeps = t.depends_on.filter((dep) => !done.has(dep));
-    for (const depId of unresolvedDeps) {
-      const dep = taskMap.get(depId);
-      if (dep) {
-        const dPIcon = priorityAnsi(PRIORITY_ICON[dep.priority] ?? "·", dep.priority);
-        const dRIcon = dep.refinement !== "autonomous" ? ` ${REFINEMENT_ICON[dep.refinement] ?? "?"}` : " ";
-        const dSIcon = statusAnsi(STATUS_ICON[dep.status] ?? "?", dep.status);
-        lines.push(lineAnsi(`  · ${dPIcon}${dRIcon} ${dSIcon}  ${dep.id}`, dep.status));
-      } else {
-        lines.push(`  · ${depId}`);
-      }
-    }
-    return lines;
-  }
-
   const taskMap = new Map(tasks.map((t) => [t.id, t]));
 
   if (autonomous.length > 0) {
     console.log(sectionHeader("Outstanding - Autonomous"));
     for (const t of autonomous) {
-      console.log(formatAutonomous(t));
+      console.log(formatAutonomousRow(t));
     }
     if (blocked.length > 0 || supervised.length > 0) console.log();
   }
@@ -612,7 +472,7 @@ async function cmdOverview(args: string[]): Promise<void> {
   if (blocked.length > 0) {
     console.log(sectionHeader("Blocked"));
     for (const t of blocked) {
-      for (const line of formatBlockedTree(t, taskMap)) {
+      for (const line of formatBlockedTree(t, done, taskMap)) {
         console.log(line);
       }
     }
@@ -622,7 +482,7 @@ async function cmdOverview(args: string[]): Promise<void> {
   if (supervised.length > 0) {
     console.log(sectionHeader("Outstanding - Supervised"));
     for (const t of supervised) {
-      console.log(formatSupervised(t));
+      console.log(formatRow(t));
     }
   }
 }
@@ -651,8 +511,8 @@ domus task — task management
 
 Usage:
   domus task add --title <title> [options]
-  domus task status <id> <new-status> [--note <text>]
-  domus task update <id> [--title <title>] [--summary <text>] [--tags <tag1,tag2>] [--priority <priority>] [--refinement <refinement>] [--note <text>] [--parent <id>] [--idea <id>]
+  domus task status <id> <new-status> [--outcome <text>]
+  domus task update <id> [--title <title>] [--summary <text>] [--tags <tag1,tag2>] [--priority <priority>] [--refinement <refinement>] [--depends-on <id1,id2>] [--outcome <text>] [--note <text>] [--parent <id>] [--idea <id>]
   domus task show <id>
   domus task overview [--include-done]
   domus task ready
@@ -662,7 +522,7 @@ Usage:
 Subcommands:
   add       Create a new task (writes to .domus/tasks/)
   status    Update task status
-  update    Update metadata fields (title, summary, tags, priority, refinement, note, parent, idea)
+  update    Update metadata fields (title, summary, tags, priority, refinement, depends-on, outcome, note, parent, idea)
   show      Print full detail for a single task
   overview  Compact watch-friendly overview grouped by Supervised / Autonomous
   ready     Show what's ready to work on (grouped by readiness)

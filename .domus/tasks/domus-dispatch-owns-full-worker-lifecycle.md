@@ -1,7 +1,7 @@
 # Task: domus dispatch owns full worker lifecycle
 
 **ID:** domus-dispatch-owns-full-worker-lifecycle
-**Status:** open
+**Status:** cancelled
 **Refinement:** raw
 **Priority:** high
 **Captured:** 2026-03-15

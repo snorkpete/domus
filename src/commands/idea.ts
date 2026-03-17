@@ -1,60 +1,17 @@
 import { existsSync } from "node:fs";
-import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { parseFlag, hasFlag, toKebabCase, uniqueId, validateEnum } from "../lib/args.ts";
+import { today, projectRoot, DOMUS_DIR, updateMarkdownStatus } from "../lib/jsonl.ts";
 import {
-  today,
-  projectRoot,
-  DOMUS_DIR,
-  readJsonl,
-  writeJsonl,
-  updateMarkdownStatus,
-} from "../lib/jsonl.ts";
-import { listProjects } from "../lib/projects.ts";
-import { checkClaudeInstalled, launchSession } from "../lib/session.ts";
-import { resolveWorkspace } from "../lib/workspace.ts";
-import { buildOraclePrompt } from "../personas/oracle.ts";
-
-// ── Types ────────────────────────────────────────────────────────────────────
-
-type IdeaStatus =
-  | "raw"
-  | "refined"
-  | "scoped"
-  | "implemented"
-  | "abandoned"
-  | "deferred";
-
-type IdeaEntry = {
-  id: string;
-  title: string;
-  file: string;
-  date_captured: string | null;
-  status: IdeaStatus;
-  tags: string[];
-  summary: string;
-  date_status_changed: string | null;
-  date_implemented: string | null;
-  outcome_note: string | null;
-};
-
-// ── Store helpers ─────────────────────────────────────────────────────────────
-
-function ideasJsonlPath(root: string): string {
-  return join(root, DOMUS_DIR, "ideas", "ideas.jsonl");
-}
-
-function ideasDir(root: string): string {
-  return join(root, DOMUS_DIR, "ideas");
-}
-
-async function readIdeas(root: string): Promise<IdeaEntry[]> {
-  return readJsonl<IdeaEntry>(ideasJsonlPath(root));
-}
-
-async function writeIdeas(root: string, ideas: IdeaEntry[]): Promise<void> {
-  return writeJsonl(ideasJsonlPath(root), ideasDir(root), ideas);
-}
+  type IdeaEntry,
+  type IdeaStatus,
+  VALID_IDEA_STATUSES,
+  readIdeas,
+  writeIdeas,
+} from "../lib/idea-store.ts";
+import { updateMarkdownTitle, updateSection } from "../lib/markdown.ts";
+import { cmdRefine } from "./idea-refine.ts";
 
 // ── Subcommands ──────────────────────────────────────────────────────────────
 
@@ -81,8 +38,7 @@ async function cmdAdd(args: string[]): Promise<void> {
       ?.split(",")
       .map((t) => t.trim())
       .filter(Boolean) ?? [];
-  const validStatuses: IdeaStatus[] = ["raw", "refined", "scoped", "implemented", "abandoned", "deferred"];
-  const status = validateEnum(parseFlag(args, "--status") ?? "raw", validStatuses, "status");
+  const status = validateEnum(parseFlag(args, "--status") ?? "raw", VALID_IDEA_STATUSES, "status");
 
   const ideas = await readIdeas(root);
   const existingIds = ideas.map((i) => i.id);
@@ -107,7 +63,6 @@ async function cmdAdd(args: string[]): Promise<void> {
   ideas.push(entry);
   await writeIdeas(root, ideas);
 
-  // Create detail file
   const detailPath = join(root, file);
   const detailContent = `# Idea: ${title}
 
@@ -139,7 +94,7 @@ _To be filled in._
 
 async function cmdStatus(args: string[]): Promise<void> {
   if (hasFlag(args, "--help") || hasFlag(args, "-h")) {
-    console.log("Usage: domus idea status <id> <raw|refined|scoped|implemented|abandoned|deferred> [--note <text>]");
+    console.log("Usage: domus idea status <id> <raw|refined|scoped|implemented|abandoned|deferred> [--outcome <text>]");
     return;
   }
 
@@ -148,30 +103,22 @@ async function cmdStatus(args: string[]): Promise<void> {
 
   if (!id || !newStatus) {
     console.error(
-      "Usage: domus idea status <id> <raw|refined|scoped|implemented|abandoned|deferred> [--note <text>]",
+      "Usage: domus idea status <id> <raw|refined|scoped|implemented|abandoned|deferred> [--outcome <text>]",
     );
     process.exit(1);
   }
 
-  const validStatuses: IdeaStatus[] = [
-    "raw",
-    "refined",
-    "scoped",
-    "implemented",
-    "abandoned",
-    "deferred",
-  ];
-  if (!validStatuses.includes(newStatus as IdeaStatus)) {
+  if (!VALID_IDEA_STATUSES.includes(newStatus as IdeaStatus)) {
     console.error(
-      `Invalid status: ${newStatus}. Must be one of: ${validStatuses.join(", ")}`,
+      `Invalid status: ${newStatus}. Must be one of: ${VALID_IDEA_STATUSES.join(", ")}`,
     );
     process.exit(1);
   }
 
-  const requiresNote = ["abandoned", "deferred"];
-  const note = parseFlag(args, "--note") ?? null;
-  if (requiresNote.includes(newStatus) && !note) {
-    console.error(`--note is required when setting status to "${newStatus}"`);
+  const requiresOutcome = ["abandoned", "deferred"];
+  const outcomeNote = parseFlag(args, "--outcome") ?? null;
+  if (requiresOutcome.includes(newStatus) && !outcomeNote) {
+    console.error(`--outcome is required when setting status to "${newStatus}"`);
     process.exit(1);
   }
 
@@ -190,8 +137,8 @@ async function cmdStatus(args: string[]): Promise<void> {
   if (newStatus === "implemented") {
     idea.date_implemented = today();
   }
-  if (note) {
-    idea.outcome_note = note;
+  if (outcomeNote) {
+    idea.outcome_note = outcomeNote;
   }
 
   await writeIdeas(root, ideas);
@@ -384,43 +331,15 @@ async function cmdUpdate(args: string[]): Promise<void> {
 
   await writeIdeas(root, ideas);
 
-  // Sync .md file for fields that appear in the header
   const filePath = join(root, idea.file);
-  if (newTitle && existsSync(filePath)) {
-    const content = await readFile(filePath, "utf-8");
-    const updated = content.replace(/^# Idea: .+$/m, `# Idea: ${newTitle}`);
-    await writeFile(filePath, updated, "utf-8");
+  if (existsSync(filePath)) {
+    let content = await readFile(filePath, "utf-8");
+    if (newTitle) content = updateMarkdownTitle(content, "Idea", newTitle);
+    if (newSummary) content = updateSection(content, "The Idea", newSummary);
+    await writeFile(filePath, content, "utf-8");
   }
 
   console.log(`Idea ${id} updated.`);
-}
-
-async function cmdRefine(args: string[]): Promise<void> {
-  const context = parseFlag(args, "--context");
-
-  if (!checkClaudeInstalled()) {
-    console.error(
-      "Claude Code CLI not found. Install it from https://claude.ai/claude-code",
-    );
-    process.exit(1);
-  }
-
-  let workspacePath: string;
-  try {
-    workspacePath = await resolveWorkspace();
-  } catch (err) {
-    console.error(err instanceof Error ? err.message : String(err));
-    process.exit(1);
-  }
-
-  const projects = await listProjects();
-  const prompt = buildOraclePrompt({ workspacePath, projects, context });
-
-  const domusDir = join(workspacePath, ".domus");
-  await mkdir(domusDir, { recursive: true });
-  await writeFile(join(domusDir, "last-persona"), "oracle", "utf-8");
-
-  await launchSession(prompt, workspacePath);
 }
 
 // ── Entry point ──────────────────────────────────────────────────────────────
@@ -430,7 +349,7 @@ domus idea — idea management
 
 Usage:
   domus idea add --title <title> [options]
-  domus idea status <id> <new-status> [--note <text>]
+  domus idea status <id> <new-status> [--outcome <text>]
   domus idea update <id> [--title <title>] [--summary <text>] [--tags <tag1,tag2>]
   domus idea show <id>
   domus idea overview [--filter <filter>]

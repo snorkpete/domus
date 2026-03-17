@@ -143,7 +143,7 @@ test("status: sets date_status_changed", async () => {
   expect(ideas[0].date_status_changed).not.toBeNull();
 });
 
-test("status: requires --note for abandoned", async () => {
+test("status: requires --outcome for abandoned", async () => {
   await runIdea(["add", "--title", "My Idea"]);
   const trap = trapExit();
   try {
@@ -154,7 +154,7 @@ test("status: requires --note for abandoned", async () => {
   expect(trap.didExit()).toBe(true);
 });
 
-test("status: requires --note for deferred", async () => {
+test("status: requires --outcome for deferred", async () => {
   await runIdea(["add", "--title", "My Idea"]);
   const trap = trapExit();
   try {
@@ -167,7 +167,7 @@ test("status: requires --note for deferred", async () => {
 
 test("status: saves outcome note", async () => {
   await runIdea(["add", "--title", "My Idea"]);
-  await runIdea(["status", "my-idea", "abandoned", "--note", "Not viable"]);
+  await runIdea(["status", "my-idea", "abandoned", "--outcome", "Not viable"]);
 
   const ideas = await readIdeasJsonl();
   expect(ideas[0].outcome_note).toBe("Not viable");

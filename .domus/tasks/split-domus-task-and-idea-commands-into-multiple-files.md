@@ -16,6 +16,8 @@
 
 task.ts and idea.ts are single large files with all subcommand logic inline. Refactor each into a directory (e.g. commands/task/ and commands/idea/) with one file per subcommand plus a shared helpers file.
 
+Previously marked superseded after shared helpers were extracted (commit 2061f22), with the reasoning that files were lean enough that splitting added navigation overhead. That note was left without cancelling the task — a process error. Re-opening to reassess: the task is a dependency for `add-execution-engine-status-values-to-task-cli` and `show-dependency-chains-in-blocked-section-of-task-overview`, so the split may still be warranted as the files grow with new status values and overview logic.
+
 ---
 
 ## Acceptance Criteria

@@ -29,6 +29,10 @@ Only `autonomous` tasks appear in the Autonomous section of `domus task overview
 
 Update via: `domus task status <id> <value>`
 
+**`task add` and `task update` flags must mirror each other.** When a flag is added to one command, add it to the other in the same commit.
+
+**Superseded tasks must be cancelled immediately.** If a task is superseded by another piece of work, cancel it (`domus task status <id> cancelled`) at the same time as writing any outcome note. A superseded note without a status change leaves the task misleadingly open.
+
 ## Ideas vs tasks
 
 An **idea** is for exploring unknowns — "is this worth pursuing?" or "what are we even talking about?" Ideas are concepts under development. A task forms from an idea once it's clear something will be implemented.
