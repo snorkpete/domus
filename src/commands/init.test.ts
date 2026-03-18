@@ -23,6 +23,7 @@ test("creates .domus/ directory structure", async () => {
     ".domus/tasks",
     ".domus/specs",
     ".domus/tags",
+    ".domus/reference",
   ]) {
     expect(existsSync(join(tempDir, dir))).toBe(true);
   }
@@ -31,7 +32,10 @@ test("creates .domus/ directory structure", async () => {
 test("creates seed files with correct content", async () => {
   await runInit([], { projectPath: tempDir });
 
-  const shared = await readFile(join(tempDir, ".domus/tags/shared.md"), "utf-8");
+  const shared = await readFile(
+    join(tempDir, ".domus/tags/shared.md"),
+    "utf-8",
+  );
   expect(shared).toContain("Shared Tag Vocabulary");
   expect(shared).toContain("backend");
 
@@ -136,6 +140,15 @@ test("resolveDomusPermission ignores .ts Bun.which result (bun link edge case)",
   // .ts which result is skipped; argv1 is empty so null
   expect(result).toBeNull();
   void noWhich;
+});
+
+test("installs .domus/reference/agent-instructions.md", async () => {
+  await runInit([], { projectPath: tempDir });
+  const content = await readFile(
+    join(tempDir, ".domus/reference/agent-instructions.md"),
+    "utf-8",
+  );
+  expect(content.length).toBeGreaterThan(0);
 });
 
 test("deduplicates permissions on re-run", async () => {
