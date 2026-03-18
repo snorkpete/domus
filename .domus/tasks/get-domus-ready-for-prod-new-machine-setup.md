@@ -6,7 +6,7 @@
 **Priority:** high
 **Captured:** 2026-03-14
 **Parent:** none
-**Depends on:** migrate-dispatch-from-ticket-format-to-task-file-format, fix-skill-frontmatter-triggers-to-cover-agent-invocation-scenarios, add-docscli-referencemd-with-domus-cli-usage-patterns, refactor-domus-init-to-install-template-files-from-source-instead-of-embedded-strings
+**Depends on:** migrate-dispatch-from-ticket-format-to-task-file-format, fix-skill-frontmatter-triggers-to-cover-agent-invocation-scenarios, add-docscli-referencemd-with-domus-cli-usage-patterns, refactor-domus-init-to-install-template-files-from-source-instead-of-embedded-strings, add-domus_root-to-domus-init-config
 **Idea:** none
 **Spec refs:** decisions/000-vision.md, decisions/004-domus-store-and-worker-logging.md
 

@@ -1,7 +1,7 @@
 # Task: Add pipeline observability command
 
 **ID:** add-pipeline-observability-command
-**Status:** open
+**Status:** deferred
 **Refinement:** raw
 **Priority:** normal
 **Captured:** 2026-03-15

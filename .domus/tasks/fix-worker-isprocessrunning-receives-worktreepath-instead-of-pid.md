@@ -1,7 +1,7 @@
 # Task: Fix worker isProcessRunning receives worktreePath instead of pid
 
 **ID:** fix-worker-isprocessrunning-receives-worktreepath-instead-of-pid
-**Status:** deferred
+**Status:** cancelled
 **Refinement:** raw
 **Priority:** normal
 **Captured:** 2026-03-14

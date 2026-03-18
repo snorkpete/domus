@@ -1,7 +1,7 @@
 # Task: Define execution steps as part of auto task refinement
 
 **ID:** define-execution-steps-as-part-of-auto-task-refinement
-**Status:** open
+**Status:** deferred
 **Refinement:** raw
 **Priority:** normal
 **Captured:** 2026-03-15

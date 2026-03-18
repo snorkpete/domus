@@ -1,7 +1,7 @@
 # Task: refactor domus init to install template files from source instead of embedded strings
 
 **ID:** refactor-domus-init-to-install-template-files-from-source-instead-of-embedded-strings
-**Status:** open
+**Status:** done
 **Refinement:** autonomous
 **Priority:** high
 **Captured:** 2026-03-16

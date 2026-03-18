@@ -1,7 +1,7 @@
 # Task: domus commands walk up to find .domus directory
 
 **ID:** domus-commands-walk-up-to-find-domus-directory
-**Status:** open
+**Status:** deferred
 **Refinement:** raw
 **Priority:** normal
 **Captured:** 2026-03-14

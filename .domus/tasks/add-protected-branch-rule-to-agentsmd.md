@@ -1,7 +1,7 @@
 # Task: Add protected branch rule to agents.md
 
 **ID:** add-protected-branch-rule-to-agentsmd
-**Status:** open
+**Status:** deferred
 **Refinement:** raw
 **Priority:** normal
 **Captured:** 2026-03-15

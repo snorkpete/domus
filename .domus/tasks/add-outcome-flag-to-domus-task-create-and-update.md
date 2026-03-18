@@ -1,7 +1,7 @@
 # Task: Add --outcome flag to domus task create and update
 
 **ID:** add-outcome-flag-to-domus-task-create-and-update
-**Status:** open
+**Status:** done
 **Refinement:** autonomous
 **Priority:** normal
 **Captured:** 2026-03-17

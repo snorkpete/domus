@@ -1,7 +1,7 @@
 # Task: add truncation indicator to domus task watch when output exceeds terminal height
 
 **ID:** add-truncation-indicator-to-domus-task-watch-when-output-exceeds-terminal-height
-**Status:** open
+**Status:** deferred
 **Refinement:** raw
 **Priority:** normal
 **Captured:** 2026-03-16

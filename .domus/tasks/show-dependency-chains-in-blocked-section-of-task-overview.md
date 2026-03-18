@@ -1,7 +1,7 @@
 # Task: Show dependency chains in blocked section of task overview
 
 **ID:** show-dependency-chains-in-blocked-section-of-task-overview
-**Status:** open
+**Status:** deferred
 **Refinement:** raw
 **Priority:** normal
 **Captured:** 2026-03-17

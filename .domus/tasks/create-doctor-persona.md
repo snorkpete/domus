@@ -1,7 +1,7 @@
 # Task: Create Doctor persona
 
 **ID:** create-doctor-persona
-**Status:** open
+**Status:** deferred
 **Refinement:** raw
 **Priority:** normal
 **Captured:** 2026-03-17

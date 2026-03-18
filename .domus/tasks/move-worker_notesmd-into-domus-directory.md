@@ -1,7 +1,7 @@
 # Task: Move WORKER_NOTES.md into .domus/ directory
 
 **ID:** move-worker_notesmd-into-domus-directory
-**Status:** open
+**Status:** cancelled
 **Refinement:** raw
 **Priority:** normal
 **Captured:** 2026-03-15

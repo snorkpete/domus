@@ -1,7 +1,7 @@
 # Task: Fix worktreeHasNewCommits hardcodes master as base branch
 
 **ID:** fix-worktreehasnewcommits-hardcodes-master-as-base-branch
-**Status:** deferred
+**Status:** cancelled
 **Refinement:** raw
 **Priority:** normal
 **Captured:** 2026-03-14
