@@ -8,27 +8,31 @@ const DOMUS_DIRS = [
   ".domus/tasks",
   ".domus/specs",
   ".domus/tags",
+  ".domus/reference",
 ];
 
-const SEED_FILES: Record<string, string> = {
-  ".domus/tags/shared.md": `# Shared Tag Vocabulary
-
-Controlled tag list valid for all entity types (ideas, tasks, etc.). Only use tags from this list.
-To add a new tag, add it here first, then use it.
-
-\`backend\`, \`frontend\`, \`infrastructure\`, \`devex\`, \`database\`, \`security\`, \`product\`
-`,
-  ".domus/tags/ideas.md": `# Idea-Specific Tags
-
-Tags valid only for ideas (in addition to shared tags). Currently empty.
-`,
-  ".domus/tags/tasks.md": `# Task-Specific Tags
-
-Tags valid only for tasks (in addition to shared tags). Currently empty.
-`,
-  ".domus/ideas/ideas.jsonl": "",
-  ".domus/tasks/tasks.jsonl": "",
-};
+async function buildSeedFiles(): Promise<Record<string, string>> {
+  return {
+    ".domus/tags/shared.md": await Bun.file(
+      new URL("../templates/tags/shared.md", import.meta.url),
+    ).text(),
+    ".domus/tags/ideas.md": await Bun.file(
+      new URL("../templates/tags/ideas.md", import.meta.url),
+    ).text(),
+    ".domus/tags/tasks.md": await Bun.file(
+      new URL("../templates/tags/tasks.md", import.meta.url),
+    ).text(),
+    ".domus/ideas/ideas.jsonl": await Bun.file(
+      new URL("../templates/ideas/ideas.jsonl", import.meta.url),
+    ).text(),
+    ".domus/tasks/tasks.jsonl": await Bun.file(
+      new URL("../templates/tasks/tasks.jsonl", import.meta.url),
+    ).text(),
+    ".domus/reference/agent-instructions.md": await Bun.file(
+      new URL("../templates/reference/agent-instructions.md", import.meta.url),
+    ).text(),
+  };
+}
 
 const REQUIRED_PERMISSIONS = [
   "Bash(git *)",
@@ -94,7 +98,8 @@ export async function runInit(
   }
 
   // Create missing seed files
-  for (const [relPath, content] of Object.entries(SEED_FILES)) {
+  const seedFiles = await buildSeedFiles();
+  for (const [relPath, content] of Object.entries(seedFiles)) {
     const fullPath = join(projectPath, relPath);
     if (!existsSync(fullPath)) {
       await writeFile(fullPath, content, "utf-8");
@@ -125,7 +130,9 @@ export async function runInit(
 
   const envPath = process.env.PATH;
   if (envPath === undefined) {
-    throw new Error("process.env.PATH is not set — cannot configure Claude settings.");
+    throw new Error(
+      "process.env.PATH is not set — cannot configure Claude settings.",
+    );
   }
 
   const domusPermission = await resolveDomusPermission(process.argv[1]);
@@ -138,7 +145,11 @@ export async function runInit(
   settings.permissions = { ...settings.permissions, allow: mergedAllow };
   settings.env = { ...settings.env, PATH: envPath };
 
-  await writeFile(settingsPath, `${JSON.stringify(settings, null, 2)}\n`, "utf-8");
+  await writeFile(
+    settingsPath,
+    `${JSON.stringify(settings, null, 2)}\n`,
+    "utf-8",
+  );
 
   // Report
   if (created.length > 0) {
