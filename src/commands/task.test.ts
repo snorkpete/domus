@@ -136,6 +136,27 @@ test("add: accepts proposed as a valid refinement value", async () => {
   expect(tasks[0].refinement).toBe("proposed");
 });
 
+test("add: --outcome sets outcome_note at creation time", async () => {
+  await runTask(["add", "--title", "My Task", "--outcome", "Already resolved"]);
+
+  const tasks = await readTasksJsonl();
+  expect(tasks[0].outcome_note).toBe("Already resolved");
+});
+
+test("add: --outcome empty string sets outcome_note to null", async () => {
+  await runTask(["add", "--title", "My Task", "--outcome", ""]);
+
+  const tasks = await readTasksJsonl();
+  expect(tasks[0].outcome_note).toBeNull();
+});
+
+test("add: outcome_note defaults to null when --outcome not provided", async () => {
+  await runTask(["add", "--title", "My Task"]);
+
+  const tasks = await readTasksJsonl();
+  expect(tasks[0].outcome_note).toBeNull();
+});
+
 // ── status ────────────────────────────────────────────────────────────────────
 
 test("status: updates status in JSONL and .md file", async () => {
@@ -478,6 +499,14 @@ test("update: --outcome updates outcome_note in JSONL", async () => {
 
   const tasks = await readTasksJsonl();
   expect(tasks[0].outcome_note).toBe("Completed with caveat");
+});
+
+test("update: --outcome empty string clears outcome_note", async () => {
+  await runTask(["add", "--title", "My Task", "--outcome", "Initial note"]);
+  await runTask(["update", "my-task", "--outcome", ""]);
+
+  const tasks = await readTasksJsonl();
+  expect(tasks[0].outcome_note).toBeNull();
 });
 
 test("update: --parent updates parent_id in JSONL and .md", async () => {

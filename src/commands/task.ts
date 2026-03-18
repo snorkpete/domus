@@ -67,7 +67,7 @@ async function cmdAdd(args: string[]): Promise<void> {
       .map((d) => d.trim())
       .filter(Boolean) ?? [];
   const ideaId = parseFlag(args, "--idea") ?? null;
-  const outcomeNote = parseFlag(args, "--outcome") ?? null;
+  const outcomeNote = parseFlag(args, "--outcome") || null;
   const note = parseFlag(args, "--note");
 
   const tasks = await readTasks(root);
@@ -162,7 +162,8 @@ async function cmdStatus(args: string[]): Promise<void> {
     process.exit(1);
   }
 
-  const outcomeNote = parseFlag(args, "--outcome") ?? null;
+  const hasOutcomeFlag = hasFlag(args, "--outcome");
+  const outcomeNote = parseFlag(args, "--outcome") || null;
   const tasks = await readTasks(root);
   const task = tasks.find((t) => t.id === id);
 
@@ -178,8 +179,8 @@ async function cmdStatus(args: string[]): Promise<void> {
   if (newStatus === "done") {
     task.date_done = today();
   }
-  if (outcomeNote !== null) {
-    task.outcome_note = outcomeNote || null;
+  if (hasOutcomeFlag) {
+    task.outcome_note = outcomeNote;
   }
 
   await writeTasks(root, tasks);
