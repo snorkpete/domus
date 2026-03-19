@@ -1,7 +1,7 @@
 # Task: Worker autonomy and execution model alignment
 
 **ID:** worker-autonomy-and-execution-model-alignment
-**Status:** ready-for-senior-review
+**Status:** done
 **Branch:** task/worker-autonomy-and-execution-model-alignment
 **Refinement:** autonomous
 **Priority:** high

@@ -1,7 +1,7 @@
 # Task: Rework domus dispatch to align with execution engine architecture
 
 **ID:** rework-domus-dispatch-to-align-with-execution-engine-architecture
-**Status:** open
+**Status:** done
 **Refinement:** autonomous
 **Priority:** high
 **Captured:** 2026-03-16

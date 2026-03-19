@@ -1,7 +1,7 @@
 # Task: Add execution engine status values to task CLI
 
 **ID:** add-execution-engine-status-values-to-task-cli
-**Status:** open
+**Status:** done
 **Refinement:** autonomous
 **Priority:** high
 **Captured:** 2026-03-17

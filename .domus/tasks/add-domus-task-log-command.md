@@ -1,7 +1,7 @@
 # Task: Add domus task log command
 
 **ID:** add-domus-task-log-command
-**Status:** open
+**Status:** done
 **Refinement:** autonomous
 **Priority:** high
 **Captured:** 2026-03-15
@@ -64,3 +64,7 @@ Depends on `add-domus_root-to-domus-init-config` (subtask 2 of the parent epic) 
 ```
 
 **`branch:` field on task:** Does not currently exist in `task-types.ts` — add it as an optional string field. Use `domus task update <id> --branch <branch>` or update the frontmatter directly in `domus task start`.
+
+---
+
+**Outcome:** Command was implemented in feat/rework-domus-init. DOMUS_ROOT resolution fixed via config.json in worker-autonomy-and-execution-model-alignment subtask. Task verified complete.
