@@ -924,3 +924,101 @@ test("ready: unblocked after dependency is done", async () => {
   expect(output).toContain("dependent");
   expect(output).not.toContain("Blocked");
 });
+
+// ── start ─────────────────────────────────────────────────────────────────────
+
+test("start: transitions task to in-progress and records branch in JSONL", async () => {
+  await runTask(["add", "--title", "My Task"]);
+  await runTask(["start", "my-task", "--branch", "task/my-task"]);
+
+  const tasks = await readTasksJsonl();
+  expect(tasks[0].status).toBe("in-progress");
+  expect(tasks[0].branch).toBe("task/my-task");
+});
+
+test("start: creates execution log file with started header", async () => {
+  await runTask(["add", "--title", "My Task"]);
+  await runTask(["start", "my-task", "--branch", "task/my-task"]);
+
+  const logPath = join(tempDir, ".domus", "execution-logs", "my-task.md");
+  expect(existsSync(logPath)).toBe(true);
+  const content = await readFile(logPath, "utf-8");
+  expect(content).toContain("# Execution Log: my-task");
+  expect(content).toContain("## Started");
+  expect(content).toContain("**Branch:** task/my-task");
+});
+
+test("start: updates status in markdown file", async () => {
+  await runTask(["add", "--title", "My Task"]);
+  await runTask(["start", "my-task", "--branch", "task/my-task"]);
+
+  const md = await readTaskMd("my-task");
+  expect(md).toContain("**Status:** in-progress");
+});
+
+test("start: exits if task not found", async () => {
+  const trap = trapExit();
+  try {
+    await runTask(["start", "no-such-task", "--branch", "task/x"]);
+  } catch { /* expected */ } finally {
+    trap.restore();
+  }
+  expect(trap.didExit()).toBe(true);
+});
+
+test("start: exits without --branch", async () => {
+  await runTask(["add", "--title", "My Task"]);
+  const trap = trapExit();
+  try {
+    await runTask(["start", "my-task"]);
+  } catch { /* expected */ } finally {
+    trap.restore();
+  }
+  expect(trap.didExit()).toBe(true);
+});
+
+// ── log ───────────────────────────────────────────────────────────────────────
+
+test("log: appends entry to execution log file", async () => {
+  await runTask(["add", "--title", "My Task"]);
+  await runTask(["start", "my-task", "--branch", "task/my-task"]);
+  await runTask(["log", "my-task", "Implemented the feature"]);
+
+  const logPath = join(tempDir, ".domus", "execution-logs", "my-task.md");
+  const content = await readFile(logPath, "utf-8");
+  expect(content).toContain("Implemented the feature");
+});
+
+test("log: appends event to audit.jsonl", async () => {
+  await runTask(["add", "--title", "My Task"]);
+  await runTask(["start", "my-task", "--branch", "task/my-task"]);
+  await runTask(["log", "my-task", "Step complete"]);
+
+  const auditPath = join(tempDir, ".domus", "audit.jsonl");
+  expect(existsSync(auditPath)).toBe(true);
+  const content = await readFile(auditPath, "utf-8");
+  const entry = JSON.parse(content.trim().split("\n")[0]);
+  expect(entry.id).toBe("my-task");
+  expect(entry.message).toBe("Step complete");
+  expect(entry.branch).toBe("task/my-task");
+  expect(typeof entry.timestamp).toBe("string");
+});
+
+test("log: exits if task not found", async () => {
+  const trap = trapExit();
+  try {
+    await runTask(["log", "no-such-task", "some message"]);
+  } catch { /* expected */ } finally {
+    trap.restore();
+  }
+  expect(trap.didExit()).toBe(true);
+});
+
+test("log: can log without prior start (creates file in execution-logs dir)", async () => {
+  await runTask(["add", "--title", "My Task"]);
+  await runTask(["log", "my-task", "Ad-hoc note"]);
+
+  const logPath = join(tempDir, ".domus", "execution-logs", "my-task.md");
+  const content = await readFile(logPath, "utf-8");
+  expect(content).toContain("Ad-hoc note");
+});

@@ -22,6 +22,7 @@ export type TaskEntry = {
   date_status_changed: string | null;
   date_done: string | null;
   outcome_note: string | null;
+  branch?: string | null;
 };
 
 // ── Constants ─────────────────────────────────────────────────────────────────

@@ -1,5 +1,5 @@
 import { existsSync } from "node:fs";
-import { readFile, writeFile } from "node:fs/promises";
+import { appendFile, mkdir, readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { parseFlag, hasFlag, toKebabCase, uniqueId, validateEnum } from "../lib/args.ts";
 import { today, projectRoot, DOMUS_DIR, updateMarkdownStatus } from "../lib/jsonl.ts";
@@ -438,6 +438,135 @@ async function cmdUpdate(args: string[]): Promise<void> {
   console.log(`Task ${id} updated.`);
 }
 
+// ── Execution log ─────────────────────────────────────────────────────────────
+
+async function cmdStart(args: string[]): Promise<void> {
+  if (hasFlag(args, "--help") || hasFlag(args, "-h")) {
+    console.log("Usage: domus task start <id> --branch <branch>");
+    return;
+  }
+
+  const root = projectRoot();
+  const [id] = args;
+  const branch = parseFlag(args, "--branch");
+
+  if (!id) {
+    console.error("Usage: domus task start <id> --branch <branch>");
+    process.exit(1);
+  }
+
+  if (!branch) {
+    console.error("Usage: domus task start <id> --branch <branch>");
+    process.exit(1);
+  }
+
+  const tasks = await readTasks(root);
+  const task = tasks.find((t) => t.id === id);
+
+  if (!task) {
+    console.error(`Task not found: ${id}`);
+    process.exit(1);
+  }
+
+  // Transition to in-progress using the same transition logic
+  const oldStatus = task.status;
+  const allowedTransitions = VALID_TRANSITIONS[oldStatus] ?? [];
+  if (!allowedTransitions.includes("in-progress")) {
+    console.error(
+      `Cannot start task ${id}: invalid transition ${oldStatus} → in-progress`,
+    );
+    process.exit(1);
+  }
+
+  task.status = "in-progress";
+  task.date_status_changed = today();
+  task.branch = branch;
+
+  await writeTasks(root, tasks);
+  await updateMarkdownStatus(join(root, task.file), "in-progress");
+
+  // Write branch to task markdown frontmatter
+  const filePath = join(root, task.file);
+  if (existsSync(filePath)) {
+    let content = await readFile(filePath, "utf-8");
+    if (content.includes("**Branch:**")) {
+      content = content.replace(/^\*\*Branch:\*\* .+$/m, `**Branch:** ${branch}`);
+    } else {
+      // Insert after Status line
+      content = content.replace(
+        /^(\*\*Status:\*\* .+)$/m,
+        `$1\n**Branch:** ${branch}`,
+      );
+    }
+    await writeFile(filePath, content, "utf-8");
+  }
+
+  // Create execution log
+  const logsDir = join(root, DOMUS_DIR, "execution-logs");
+  await mkdir(logsDir, { recursive: true });
+  const logFile = join(logsDir, `${id}.md`);
+  const timestamp = new Date().toISOString();
+  const logContent = `# Execution Log: ${id}
+
+## Started
+**Branch:** ${branch}
+**Date:** ${timestamp}
+
+---
+`;
+  await writeFile(logFile, logContent, "utf-8");
+
+  console.log(`Task ${id}: ${oldStatus} → in-progress`);
+  console.log(`  Branch:    ${branch}`);
+  console.log(`  Log:       ${DOMUS_DIR}/execution-logs/${id}.md`);
+}
+
+async function cmdLog(args: string[]): Promise<void> {
+  if (hasFlag(args, "--help") || hasFlag(args, "-h")) {
+    console.log("Usage: domus task log <id> <message>");
+    return;
+  }
+
+  const root = projectRoot();
+  const [id, ...rest] = args;
+  const message = rest.join(" ");
+
+  if (!id || !message) {
+    console.error("Usage: domus task log <id> <message>");
+    process.exit(1);
+  }
+
+  const tasks = await readTasks(root);
+  const task = tasks.find((t) => t.id === id);
+
+  if (!task) {
+    console.error(`Task not found: ${id}`);
+    process.exit(1);
+  }
+
+  const timestamp = new Date().toISOString();
+  const branch = task.branch ?? null;
+
+  // Append to execution log
+  const logsDir = join(root, DOMUS_DIR, "execution-logs");
+  await mkdir(logsDir, { recursive: true });
+  const logFile = join(logsDir, `${id}.md`);
+  const logEntry = `## ${timestamp}
+
+${message}
+
+---
+`;
+  await appendFile(logFile, logEntry, "utf-8");
+
+  // Append to audit log
+  const auditFile = join(root, DOMUS_DIR, "audit.jsonl");
+  const auditEntry = JSON.stringify({ id, message, timestamp, branch }) + "\n";
+  await appendFile(auditFile, auditEntry, "utf-8");
+
+  console.log(`Logged to ${DOMUS_DIR}/execution-logs/${id}.md`);
+}
+
 // ── Overview ──────────────────────────────────────────────────────────────────
 
 async function cmdOverview(args: string[]): Promise<void> {
@@ -539,6 +668,8 @@ Usage:
   domus task status <id> <open|in-progress|ready-for-senior-review|done|cancelled|deferred> [--outcome <text>]
   domus task update <id> [--title <title>] [--summary <text>] [--tags <tag1,tag2>] [--priority <priority>] [--refinement <refinement>] [--depends-on <id1,id2>] [--outcome <text>] [--note <text>] [--parent <id>] [--idea <id>]
   domus task show <id>
+  domus task start <id> --branch <branch>
+  domus task log <id> <message>
   domus task overview [--include-done]
   domus task ready
   domus task list [--status <status>] [--json]
@@ -549,6 +680,8 @@ Subcommands:
   status    Update task status
   update    Update metadata fields (title, summary, tags, priority, refinement, depends-on, outcome, note, parent, idea)
   show      Print full detail for a single task
+  start     Mark task in-progress, record branch, create execution log
+  log       Append a timestamped entry to the execution log
   overview  Compact watch-friendly overview grouped by Supervised / Autonomous
   ready     Show what's ready to work on (grouped by readiness)
   list      List all tasks (--json for machine-readable output)
@@ -570,6 +703,12 @@ export async function runTask(args: string[]): Promise<void> {
       break;
     case "show":
       await cmdShow(args.slice(1));
+      break;
+    case "start":
+      await cmdStart(args.slice(1));
+      break;
+    case "log":
+      await cmdLog(args.slice(1));
       break;
     case "overview":
       await cmdOverview(args.slice(1));
