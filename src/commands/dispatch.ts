@@ -1,92 +1,53 @@
-import { readFile } from "node:fs/promises";
-import { basename } from "node:path";
-import { listProjects } from "../lib/projects.ts";
-import type { Project } from "../lib/projects.ts";
-import type { Ticket } from "../lib/tickets.ts";
-import { dispatchWorker } from "../lib/worker.ts";
-import { resolveWorkspace } from "../lib/workspace.ts";
+import { projectRoot } from "../lib/jsonl.ts";
+import { readTasks } from "../lib/task-store.ts";
+import { runTask } from "./task.ts";
 
-export type TaskRef = {
-  id: string;
-  title: string;
-  filePath: string;
-};
-
-export async function parseTaskFile(filePath: string): Promise<TaskRef> {
-  const content = await readFile(filePath, "utf-8");
-
-  const idMatch = content.match(/^\*\*ID:\*\*\s*(.+)$/m);
-  const titleMatch = content.match(/^# Task:\s*(.+)$/m);
-
-  const id = idMatch?.[1]?.trim() ?? basename(filePath, ".md");
-  const title = titleMatch?.[1]?.trim() ?? id;
-
-  return { id, title, filePath };
-}
-
-export function deriveProjectFromCwd(
-  cwd: string,
-  projects: Project[],
-): Project | undefined {
-  const cwdNorm = cwd.endsWith("/") ? cwd : `${cwd}/`;
-
-  let best: Project | undefined;
-  let bestLen = -1;
-
-  for (const p of projects) {
-    const pathNorm = p.path.endsWith("/") ? p.path : `${p.path}/`;
-    if (cwdNorm.startsWith(pathNorm) && pathNorm.length > bestLen) {
-      best = p;
-      bestLen = pathNorm.length;
-    }
-  }
-
-  return best;
-}
+// Statuses that can be dispatched
+const DISPATCHABLE_STATUSES = new Set(["open", "in-progress"]);
 
 export async function runDispatch(args: string[]): Promise<void> {
-  const taskFile = args[0];
-  if (!taskFile) {
-    console.error("Usage: domus dispatch <task-file>");
+  const taskId = args[0];
+  if (!taskId || taskId.startsWith("-")) {
+    console.error("Usage: domus dispatch <task-id>");
     process.exit(1);
   }
 
-  let workspacePath: string;
-  try {
-    workspacePath = await resolveWorkspace();
-  } catch (err) {
-    console.error(err instanceof Error ? err.message : String(err));
+  const root = projectRoot();
+  const tasks = await readTasks(root);
+  const task = tasks.find((t) => t.id === taskId);
+
+  if (!task) {
+    console.error(`Task not found: ${taskId}`);
     process.exit(1);
   }
 
-  const taskRef = await parseTaskFile(taskFile);
-  const projects = await listProjects();
-  const project = deriveProjectFromCwd(process.cwd(), projects);
-
-  if (!project) {
+  // Must be dispatchable: open/in-progress, and autonomous refinement
+  if (!DISPATCHABLE_STATUSES.has(task.status)) {
     console.error(
-      "No registered project found for current directory. Register it with `domus add project`.",
+      `Task ${taskId} is not dispatchable (status: ${task.status}). Must be open or in-progress.`,
     );
     process.exit(1);
   }
 
-  const ticket: Ticket = {
-    number: taskRef.id,
-    title: taskRef.title,
-    status: "open",
-    project: project.name,
-    branch: `task/${taskRef.id}`,
-    filePath: taskRef.filePath,
-  };
-
-  try {
-    const handle = await dispatchWorker(ticket, project, workspacePath);
-    console.log(`Dispatched worker ${handle.workerId}`);
-    console.log(`  Branch:   ${handle.branch}`);
-    console.log(`  Worktree: ${handle.worktreePath}`);
-    console.log(`  PID:      ${handle.pid}`);
-  } catch (err) {
-    console.error(err instanceof Error ? err.message : String(err));
+  if (task.refinement !== "autonomous") {
+    console.error(
+      `Task ${taskId} is not autonomous (refinement: ${task.refinement}). Only autonomous tasks can be dispatched.`,
+    );
     process.exit(1);
   }
+
+  if (task.status === "open") {
+    // Derive branch name from task id
+    const branch = `task/${taskId}`;
+    console.log(`Starting task ${taskId} on branch ${branch}...`);
+    await runTask(["start", taskId, "--branch", branch]);
+  } else {
+    // Already in-progress — resume case, skip start
+    console.log(`Task ${taskId} is already in-progress, resuming...`);
+    console.log(`  Branch: ${task.branch ?? "(none recorded)"}`);
+  }
+
+  console.log();
+  console.log(`Task ${taskId} is ready for dispatch.`);
+  console.log(`Hand off to Claude with the worker persona and the task execution log.`);
 }

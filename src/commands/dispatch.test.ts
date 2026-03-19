@@ -1,81 +1,119 @@
-import { describe, expect, test } from "bun:test";
-import { mkdir, rm, writeFile } from "node:fs/promises";
+import { afterEach, beforeEach, expect, test } from "bun:test";
+import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import type { Project } from "../lib/projects.ts";
-import { deriveProjectFromCwd, parseTaskFile } from "./dispatch.ts";
+import { runDispatch } from "./dispatch.ts";
+import { runTask } from "./task.ts";
 
-// --- parseTaskFile ---
+let tempDir: string;
+let originalCwd: string;
 
-describe("parseTaskFile", () => {
-  async function makeTmpTask(content: string): Promise<string> {
-    const dir = join(tmpdir(), `domus-dispatch-test-${Date.now()}`);
-    await mkdir(dir, { recursive: true });
-    const file = join(dir, "my-task.md");
-    await writeFile(file, content, "utf-8");
-    return file;
-  }
-
-  test("extracts ID and title from task frontmatter and heading", async () => {
-    const file = await makeTmpTask(`# Task: do the thing
-
-**ID:** do-the-thing
-**Status:** open
-**Refinement:** autonomous
-`);
-    const result = await parseTaskFile(file);
-    expect(result.id).toBe("do-the-thing");
-    expect(result.title).toBe("do the thing");
-    expect(result.filePath).toBe(file);
-    await rm(file);
-  });
-
-  test("falls back to filename when no ID field", async () => {
-    const dir = join(tmpdir(), `domus-dispatch-test-${Date.now()}`);
-    await mkdir(dir, { recursive: true });
-    const file = join(dir, "some-task-id.md");
-    await writeFile(file, "# just a heading\n\nno frontmatter", "utf-8");
-    const result = await parseTaskFile(file);
-    expect(result.id).toBe("some-task-id");
-    await rm(file);
-  });
-
-  test("falls back to id when no title heading", async () => {
-    const file = await makeTmpTask("**ID:** task-abc\n\nsome content");
-    const result = await parseTaskFile(file);
-    expect(result.id).toBe("task-abc");
-    expect(result.title).toBe("task-abc");
-    await rm(file);
-  });
+beforeEach(async () => {
+  originalCwd = process.cwd();
+  tempDir = await mkdtemp(join(tmpdir(), "domus-dispatch-test-"));
+  process.chdir(tempDir);
 });
 
-// --- deriveProjectFromCwd ---
+afterEach(async () => {
+  process.chdir(originalCwd);
+  await rm(tempDir, { recursive: true, force: true });
+});
 
-describe("deriveProjectFromCwd", () => {
-  const projects: Project[] = [
-    { name: "alpha", path: "/code/alpha", added: "2026-01-01" },
-    { name: "beta", path: "/code/beta", added: "2026-01-01" },
-    { name: "alpha-sub", path: "/code/alpha/sub", added: "2026-01-01" },
-  ];
+function trapExit(): { didExit: () => boolean; restore: () => void } {
+  let _exited = false;
+  const orig = process.exit;
+  process.exit = (() => {
+    _exited = true;
+    throw new Error("process.exit");
+  }) as never;
+  return { didExit: () => _exited, restore: () => { process.exit = orig; } };
+}
 
-  test("returns project whose path matches cwd exactly", () => {
-    const result = deriveProjectFromCwd("/code/alpha", projects);
-    expect(result?.name).toBe("alpha");
-  });
+function captureOutput(): { lines: () => string[]; restore: () => void } {
+  const _lines: string[] = [];
+  const origLog = console.log;
+  const origErr = console.error;
+  console.log = (...args: unknown[]) => _lines.push(args.join(" "));
+  console.error = (...args: unknown[]) => _lines.push(args.join(" "));
+  return {
+    lines: () => _lines,
+    restore: () => { console.log = origLog; console.error = origErr; },
+  };
+}
 
-  test("returns project whose path is a prefix of cwd (subdirectory)", () => {
-    const result = deriveProjectFromCwd("/code/beta/src/lib", projects);
-    expect(result?.name).toBe("beta");
-  });
+test("dispatch: exits with no args", async () => {
+  const trap = trapExit();
+  try {
+    await runDispatch([]);
+  } catch { /* expected */ } finally {
+    trap.restore();
+  }
+  expect(trap.didExit()).toBe(true);
+});
 
-  test("returns longest-prefix match when multiple projects match", () => {
-    // /code/alpha/sub/src matches both alpha and alpha-sub — should pick alpha-sub
-    const result = deriveProjectFromCwd("/code/alpha/sub/src", projects);
-    expect(result?.name).toBe("alpha-sub");
-  });
+test("dispatch: exits if task not found", async () => {
+  const trap = trapExit();
+  try {
+    await runDispatch(["no-such-task"]);
+  } catch { /* expected */ } finally {
+    trap.restore();
+  }
+  expect(trap.didExit()).toBe(true);
+});
 
-  test("returns undefined when no project matches", () => {
-    const result = deriveProjectFromCwd("/code/gamma", projects);
-    expect(result).toBeUndefined();
-  });
+test("dispatch: exits if task is not autonomous", async () => {
+  await runTask(["add", "--title", "Manual Task", "--refinement", "refined"]);
+  const trap = trapExit();
+  const out = captureOutput();
+  try {
+    await runDispatch(["manual-task"]);
+  } catch { /* expected */ } finally {
+    trap.restore();
+    out.restore();
+  }
+  expect(trap.didExit()).toBe(true);
+  expect(out.lines().join("\n")).toContain("not autonomous");
+});
+
+test("dispatch: exits if task is done", async () => {
+  await runTask(["add", "--title", "My Task", "--refinement", "autonomous"]);
+  await runTask(["status", "my-task", "done"]);
+  const trap = trapExit();
+  const out = captureOutput();
+  try {
+    await runDispatch(["my-task"]);
+  } catch { /* expected */ } finally {
+    trap.restore();
+    out.restore();
+  }
+  expect(trap.didExit()).toBe(true);
+  expect(out.lines().join("\n")).toContain("not dispatchable");
+});
+
+test("dispatch: starts an open autonomous task", async () => {
+  await runTask(["add", "--title", "My Task", "--refinement", "autonomous"]);
+  const out = captureOutput();
+  try {
+    await runDispatch(["my-task"]);
+  } finally {
+    out.restore();
+  }
+  const output = out.lines().join("\n");
+  expect(output).toContain("Starting task my-task");
+  expect(output).toContain("ready for dispatch");
+});
+
+test("dispatch: resumes an in-progress autonomous task without restarting", async () => {
+  await runTask(["add", "--title", "My Task", "--refinement", "autonomous"]);
+  await runTask(["start", "my-task", "--branch", "task/my-task"]);
+  const out = captureOutput();
+  try {
+    await runDispatch(["my-task"]);
+  } finally {
+    out.restore();
+  }
+  const output = out.lines().join("\n");
+  expect(output).toContain("already in-progress");
+  expect(output).toContain("resuming");
+  expect(output).toContain("ready for dispatch");
 });
