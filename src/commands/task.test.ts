@@ -207,6 +207,67 @@ test("status: exits on invalid status value", async () => {
   expect(trap.didExit()).toBe(true);
 });
 
+test("status: accepts ready-for-senior-review from in-progress", async () => {
+  await runTask(["add", "--title", "My Task"]);
+  await runTask(["status", "my-task", "in-progress"]);
+  await runTask(["status", "my-task", "ready-for-senior-review"]);
+
+  const tasks = await readTasksJsonl();
+  expect(tasks[0].status).toBe("ready-for-senior-review");
+
+  const md = await readTaskMd("my-task");
+  expect(md).toContain("**Status:** ready-for-senior-review");
+});
+
+test("status: accepts done from ready-for-senior-review", async () => {
+  await runTask(["add", "--title", "My Task"]);
+  await runTask(["status", "my-task", "in-progress"]);
+  await runTask(["status", "my-task", "ready-for-senior-review"]);
+  await runTask(["status", "my-task", "done"]);
+
+  const tasks = await readTasksJsonl();
+  expect(tasks[0].status).toBe("done");
+});
+
+test("status: rejects invalid transition open → ready-for-senior-review", async () => {
+  await runTask(["add", "--title", "My Task"]);
+  const trap = trapExit();
+  const out = captureOutput();
+  try {
+    await runTask(["status", "my-task", "ready-for-senior-review"]);
+  } catch { /* expected */ } finally {
+    trap.restore();
+    out.restore();
+  }
+  expect(trap.didExit()).toBe(true);
+  expect(out.lines().join("\n")).toContain("Invalid transition");
+});
+
+test("status: cancelled is valid from ready-for-senior-review", async () => {
+  await runTask(["add", "--title", "My Task"]);
+  await runTask(["status", "my-task", "in-progress"]);
+  await runTask(["status", "my-task", "ready-for-senior-review"]);
+  await runTask(["status", "my-task", "cancelled"]);
+
+  const tasks = await readTasksJsonl();
+  expect(tasks[0].status).toBe("cancelled");
+});
+
+test("list: ready-for-senior-review task shows correct icon", async () => {
+  await runTask(["add", "--title", "My Task"]);
+  await runTask(["status", "my-task", "in-progress"]);
+  await runTask(["status", "my-task", "ready-for-senior-review"]);
+
+  const out = captureOutput();
+  try {
+    await runTask(["list"]);
+  } finally {
+    out.restore();
+  }
+  expect(out.lines().join("\n")).toContain("◎");
+  expect(out.lines().join("\n")).toContain("my-task");
+});
+
 // ── list ──────────────────────────────────────────────────────────────────────
 
 test("list: outputs icon + refinement + id + title", async () => {

@@ -1,6 +1,6 @@
 // ── Types ────────────────────────────────────────────────────────────────────
 
-export type TaskStatus = "open" | "in-progress" | "done" | "cancelled" | "deferred";
+export type TaskStatus = "open" | "in-progress" | "ready-for-senior-review" | "done" | "cancelled" | "deferred";
 export type TaskRefinement = "raw" | "proposed" | "refined" | "autonomous";
 export type TaskPriority = "high" | "normal" | "low";
 
@@ -26,6 +26,6 @@ export type TaskEntry = {
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
-export const VALID_STATUSES: TaskStatus[] = ["open", "in-progress", "done", "cancelled", "deferred"];
+export const VALID_STATUSES: TaskStatus[] = ["open", "in-progress", "ready-for-senior-review", "done", "cancelled", "deferred"];
 export const VALID_REFINEMENTS: TaskRefinement[] = ["raw", "proposed", "refined", "autonomous"];
 export const VALID_PRIORITIES: TaskPriority[] = ["high", "normal", "low"];

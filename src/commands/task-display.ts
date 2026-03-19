@@ -17,6 +17,7 @@ export const PRIORITY_ICON: Record<TaskPriority, string> = {
 export const STATUS_ICON: Record<TaskStatus | "blocked", string> = {
   open: "○",
   "in-progress": "◑",
+  "ready-for-senior-review": "◎",
   done: "●",
   cancelled: "✕",
   deferred: "⏸",

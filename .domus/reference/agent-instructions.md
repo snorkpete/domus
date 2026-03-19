@@ -25,7 +25,9 @@ Only `autonomous` tasks appear in the Autonomous section of `domus task overview
 
 ## Task status values
 
-`open` → `in-progress` → `done` | `cancelled` | `deferred`
+`open` → `in-progress` → `ready-for-senior-review` → `done` | `cancelled` | `deferred`
+
+`cancelled` and `deferred` are valid escape hatches from any state. Invalid transitions are rejected with an error.
 
 Update via: `domus task status <id> <value>`
 
@@ -35,6 +37,7 @@ Update via: `domus task status <id> <value>`
 |------|---------|
 | `○` | open |
 | `◑` | in-progress |
+| `◎` | ready-for-senior-review |
 | `●` | done |
 | `✕` | cancelled |
 | `⏸` | deferred |

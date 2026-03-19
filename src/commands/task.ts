@@ -139,9 +139,24 @@ _Remove if empty._
   console.log(`  File:   ${file}`);
 }
 
+// ── Transition map ────────────────────────────────────────────────────────────
+// Maps each status to the set of statuses it can transition to.
+// `cancelled` and `deferred` are valid escape hatches from any state.
+
+const ESCAPE_HATCHES: TaskStatus[] = ["cancelled", "deferred"];
+
+const VALID_TRANSITIONS: Record<TaskStatus, TaskStatus[]> = {
+  open: ["in-progress", "done", ...ESCAPE_HATCHES],
+  "in-progress": ["ready-for-senior-review", "done", ...ESCAPE_HATCHES],
+  "ready-for-senior-review": ["done", "in-progress", ...ESCAPE_HATCHES],
+  done: [...ESCAPE_HATCHES],
+  cancelled: ["open"],
+  deferred: ["open"],
+};
+
 async function cmdStatus(args: string[]): Promise<void> {
   if (hasFlag(args, "--help") || hasFlag(args, "-h")) {
-    console.log("Usage: domus task status <id> <open|in-progress|done|cancelled|deferred> [--outcome <text>]");
+    console.log("Usage: domus task status <id> <open|in-progress|ready-for-senior-review|done|cancelled|deferred> [--outcome <text>]");
     return;
   }
 
@@ -150,7 +165,7 @@ async function cmdStatus(args: string[]): Promise<void> {
 
   if (!id || !newStatus) {
     console.error(
-      "Usage: domus task status <id> <open|in-progress|done|cancelled|deferred>",
+      "Usage: domus task status <id> <open|in-progress|ready-for-senior-review|done|cancelled|deferred>",
     );
     process.exit(1);
   }
@@ -173,6 +188,14 @@ async function cmdStatus(args: string[]): Promise<void> {
   }
 
   const oldStatus = task.status;
+  const allowedTransitions = VALID_TRANSITIONS[oldStatus] ?? [];
+  if (!allowedTransitions.includes(newStatus as TaskStatus)) {
+    console.error(
+      `Invalid transition: ${oldStatus} → ${newStatus}. Allowed: ${allowedTransitions.join(", ")}`,
+    );
+    process.exit(1);
+  }
+
   task.status = newStatus as TaskStatus;
   task.date_status_changed = today();
 
@@ -285,6 +308,7 @@ async function cmdList(args: string[]): Promise<void> {
   const statusIcon: Record<TaskStatus, string> = {
     open: "○",
     "in-progress": "◑",
+    "ready-for-senior-review": "◎",
     done: "●",
     cancelled: "✕",
     deferred: "⏸",
@@ -430,7 +454,7 @@ async function cmdOverview(args: string[]): Promise<void> {
 
   const done = doneIds(tasks);
 
-  const visibleStatuses = new Set<TaskStatus>(["open", "in-progress"]);
+  const visibleStatuses = new Set<TaskStatus>(["open", "in-progress", "ready-for-senior-review"]);
   if (includeDone) visibleStatuses.add("done");
 
   const autonomous: TaskEntry[] = [];
@@ -512,7 +536,7 @@ domus task — task management
 
 Usage:
   domus task add --title <title> [options]
-  domus task status <id> <new-status> [--outcome <text>]
+  domus task status <id> <open|in-progress|ready-for-senior-review|done|cancelled|deferred> [--outcome <text>]
   domus task update <id> [--title <title>] [--summary <text>] [--tags <tag1,tag2>] [--priority <priority>] [--refinement <refinement>] [--depends-on <id1,id2>] [--outcome <text>] [--note <text>] [--parent <id>] [--idea <id>]
   domus task show <id>
   domus task overview [--include-done]
