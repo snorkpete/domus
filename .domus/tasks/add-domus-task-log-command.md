@@ -6,7 +6,7 @@
 **Priority:** high
 **Captured:** 2026-03-15
 **Parent:** execution-engine-and-progress-mobility-implementation
-**Depends on:** add-domus_root-to-domus-init-config
+**Depends on:** none
 **Idea:** none
 **Spec refs:** none
 
