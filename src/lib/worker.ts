@@ -1,6 +1,7 @@
 import { existsSync } from "node:fs";
 import { mkdir, readFile, readdir, writeFile } from "node:fs/promises";
 import { join } from "node:path";
+import { configBranch } from "./jsonl.ts";
 import { updateTicketStatus } from "./tickets.ts";
 
 export type WorkerStatus = {
@@ -109,10 +110,14 @@ export function isProcessRunning(pid: number | string): boolean {
 }
 
 function worktreeHasNewCommits(worktreePath: string): boolean {
-  const result = Bun.spawnSync(["git", "log", "master..HEAD", "--oneline"], {
-    cwd: worktreePath,
-    env: process.env,
-  });
+  const baseBranch = configBranch(worktreePath);
+  const result = Bun.spawnSync(
+    ["git", "log", `${baseBranch}..HEAD`, "--oneline"],
+    {
+      cwd: worktreePath,
+      env: process.env,
+    },
+  );
   return (
     result.exitCode === 0 &&
     new TextDecoder().decode(result.stdout).trim().length > 0
@@ -139,4 +144,3 @@ async function writeWorkerStatus(
     "utf-8",
   );
 }
-

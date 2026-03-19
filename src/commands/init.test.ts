@@ -162,3 +162,88 @@ test("deduplicates permissions on re-run", async () => {
   const unique = new Set(allow);
   expect(allow.length).toBe(unique.size);
 });
+
+test("creates .domus/execution-logs/ directory", async () => {
+  await runInit([], { projectPath: tempDir });
+  expect(existsSync(join(tempDir, ".domus/execution-logs"))).toBe(true);
+});
+
+test("writes .domus/config.json with root and branch fields", async () => {
+  await runInit([], { projectPath: tempDir });
+
+  const configPath = join(tempDir, ".domus/config.json");
+  expect(existsSync(configPath)).toBe(true);
+
+  const config = JSON.parse(await readFile(configPath, "utf-8"));
+  expect(config.root).toBe(join(tempDir, ".domus"));
+  expect(typeof config.branch).toBe("string");
+  expect(config.branch.length).toBeGreaterThan(0);
+});
+
+test("config.json root points to .domus inside the project path", async () => {
+  await runInit([], { projectPath: tempDir });
+
+  const config = JSON.parse(
+    await readFile(join(tempDir, ".domus/config.json"), "utf-8"),
+  );
+  expect(config.root).toBe(join(tempDir, ".domus"));
+});
+
+test("creates empty .domus/audit.jsonl", async () => {
+  await runInit([], { projectPath: tempDir });
+
+  const auditPath = join(tempDir, ".domus/audit.jsonl");
+  expect(existsSync(auditPath)).toBe(true);
+
+  const content = await readFile(auditPath, "utf-8");
+  expect(content).toBe("");
+});
+
+test("creates .domus/.gitignore containing audit.jsonl", async () => {
+  await runInit([], { projectPath: tempDir });
+
+  const gitignorePath = join(tempDir, ".domus/.gitignore");
+  expect(existsSync(gitignorePath)).toBe(true);
+
+  const content = await readFile(gitignorePath, "utf-8");
+  expect(content).toContain("audit.jsonl");
+});
+
+test("appends audit.jsonl to existing .domus/.gitignore if missing", async () => {
+  await mkdir(join(tempDir, ".domus"), { recursive: true });
+  await writeFile(join(tempDir, ".domus/.gitignore"), "*.tmp\n", "utf-8");
+
+  await runInit([], { projectPath: tempDir });
+
+  const content = await readFile(join(tempDir, ".domus/.gitignore"), "utf-8");
+  expect(content).toContain("*.tmp");
+  expect(content).toContain("audit.jsonl");
+});
+
+test("does not duplicate audit.jsonl in .domus/.gitignore on re-run", async () => {
+  await runInit([], { projectPath: tempDir });
+  await runInit([], { projectPath: tempDir });
+
+  const content = await readFile(join(tempDir, ".domus/.gitignore"), "utf-8");
+  const occurrences = (content.match(/audit\.jsonl/g) ?? []).length;
+  expect(occurrences).toBe(1);
+});
+
+test("config.json is overwritten on re-run with updated branch", async () => {
+  await runInit([], { projectPath: tempDir });
+
+  const config1 = JSON.parse(
+    await readFile(join(tempDir, ".domus/config.json"), "utf-8"),
+  );
+
+  await runInit([], { projectPath: tempDir });
+
+  const config2 = JSON.parse(
+    await readFile(join(tempDir, ".domus/config.json"), "utf-8"),
+  );
+
+  // root should stay the same
+  expect(config2.root).toBe(config1.root);
+  // branch field exists and is a string
+  expect(typeof config2.branch).toBe("string");
+});

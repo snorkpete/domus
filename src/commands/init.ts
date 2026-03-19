@@ -2,6 +2,7 @@ import { existsSync } from "node:fs";
 import { mkdir, readFile, realpath, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { projectRoot } from "../lib/jsonl.ts";
+import type { DomusConfig } from "../lib/jsonl.ts";
 
 const DOMUS_DIRS = [
   ".domus/ideas",
@@ -11,6 +12,7 @@ const DOMUS_DIRS = [
   ".domus/reference",
   ".domus/reference/staff",
   ".domus/reference/staff/roles",
+  ".domus/execution-logs",
 ];
 
 async function buildSeedFiles(): Promise<Record<string, string>> {
@@ -110,6 +112,25 @@ type InitOptions = {
   projectPath?: string;
 };
 
+/**
+ * Resolve the current git branch for the given project path.
+ * Falls back to "main" if git is unavailable or the directory is not a git repo.
+ */
+async function resolveGitBranch(projectPath: string): Promise<string> {
+  try {
+    const result = Bun.spawnSync(["git", "rev-parse", "--abbrev-ref", "HEAD"], {
+      cwd: projectPath,
+      env: process.env,
+    });
+    if (result.exitCode === 0) {
+      return new TextDecoder().decode(result.stdout).trim();
+    }
+  } catch {
+    // fall through
+  }
+  return "main";
+}
+
 export async function runInit(
   _args: string[],
   options: InitOptions = {},
@@ -141,6 +162,39 @@ export async function runInit(
     }
   }
 
+  // Write .domus/config.json (always overwrite — captures current branch at init time)
+  const currentBranch = await resolveGitBranch(projectPath);
+  const domusRoot = join(projectPath, ".domus");
+  const config: DomusConfig = { root: domusRoot, branch: currentBranch };
+  await writeFile(
+    join(domusRoot, "config.json"),
+    `${JSON.stringify(config, null, 2)}\n`,
+    "utf-8",
+  );
+  created.push(".domus/config.json");
+
+  // Create .domus/audit.jsonl (empty, git-ignored) if it doesn't exist
+  const auditPath = join(domusRoot, "audit.jsonl");
+  if (!existsSync(auditPath)) {
+    await writeFile(auditPath, "", "utf-8");
+    created.push(".domus/audit.jsonl");
+  } else {
+    skipped.push(".domus/audit.jsonl");
+  }
+
+  // Ensure audit.jsonl is git-ignored
+  const domusGitignorePath = join(domusRoot, ".gitignore");
+  const gitignoreEntry = "audit.jsonl\n";
+  if (!existsSync(domusGitignorePath)) {
+    await writeFile(domusGitignorePath, gitignoreEntry, "utf-8");
+    created.push(".domus/.gitignore");
+  } else {
+    const existing = await readFile(domusGitignorePath, "utf-8");
+    if (!existing.includes("audit.jsonl")) {
+      await writeFile(domusGitignorePath, existing + gitignoreEntry, "utf-8");
+    }
+  }
+
   // Merge .claude/settings.json
   const claudeDir = join(projectPath, ".claude");
   const settingsPath = join(claudeDir, "settings.json");
@@ -154,7 +208,7 @@ export async function runInit(
       settings = JSON.parse(raw) as Settings;
     } catch {
       throw new Error(
-        `.claude/settings.json contains invalid JSON. Fix or delete it and re-run domus init.`,
+        ".claude/settings.json contains invalid JSON. Fix or delete it and re-run domus init.",
       );
     }
     settingsExisted = true;
