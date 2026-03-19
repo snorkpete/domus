@@ -1,7 +1,7 @@
 # Task: Add DOMUS_ROOT to domus init config
 
 **ID:** add-domus_root-to-domus-init-config
-**Status:** open
+**Status:** cancelled
 **Refinement:** raw
 **Priority:** high
 **Captured:** 2026-03-15

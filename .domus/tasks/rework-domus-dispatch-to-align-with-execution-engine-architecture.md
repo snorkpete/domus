@@ -2,10 +2,10 @@
 
 **ID:** rework-domus-dispatch-to-align-with-execution-engine-architecture
 **Status:** open
-**Refinement:** raw
+**Refinement:** autonomous
 **Priority:** high
 **Captured:** 2026-03-16
-**Parent:** none
+**Parent:** execution-engine-and-progress-mobility-implementation
 **Depends on:** add-domus-task-log-command
 **Idea:** none
 **Spec refs:** none
@@ -27,8 +27,9 @@ Worktree management is Claude's job (native worktree support via Agent tool with
 
 ## Acceptance Criteria
 
-- [ ] `domus dispatch <task-id>` validates task exists and is `open` or `autonomous`
-- [ ] Calls `domus task start <task-id>` before handing off (marks in-progress, creates execution log)
+- [ ] `domus dispatch <task-id>` validates task exists and is `open`, `in-progress`, or `autonomous`
+- [ ] For `open`/`autonomous`: calls `domus task start <task-id>` before handing off (marks in-progress, creates execution log)
+- [ ] For `in-progress`: skips `domus task start` (already started); hands off directly so worker reads execution log and resumes
 - [ ] Does NOT do project registry lookup, context assembly, or worktree management
 - [ ] `dispatchWorker()` and related machinery in `worker.ts` removed or gutted
 - [ ] Old `domus-dispatch-owns-full-worker-lifecycle` task cancelled (superseded)

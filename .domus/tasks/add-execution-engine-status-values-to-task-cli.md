@@ -2,11 +2,11 @@
 
 **ID:** add-execution-engine-status-values-to-task-cli
 **Status:** open
-**Refinement:** raw
+**Refinement:** autonomous
 **Priority:** high
 **Captured:** 2026-03-17
-**Parent:** none
-**Depends on:** split-domus-task-and-idea-commands-into-multiple-files
+**Parent:** execution-engine-and-progress-mobility-implementation
+**Depends on:** none
 **Idea:** none
 **Spec refs:** none
 
@@ -14,34 +14,37 @@
 
 ## What This Task Is
 
-ADR 005 defines an execution engine state machine with two new status values the task CLI does not yet know about. Add them as valid statuses with correct transition rules and update all relevant documentation.
+ADR 005 defines an execution engine state machine. Add `ready-for-senior-review` as a valid task status with correct transition rules. This is the v0.1 boundary — `ready-for-manual-review` (the human review gate) is explicitly deferred to a later milestone.
 
-New statuses:
+New status:
 - `ready-for-senior-review` — implementation committed, awaiting senior reviewer persona
-- `ready-for-manual-review` — senior review done, awaiting human approval (optional gate)
 
 ---
 
 ## Acceptance Criteria
 
 - [ ] `domus task status <id> ready-for-senior-review` accepted as a valid transition from `in-progress`
-- [ ] `domus task status <id> ready-for-manual-review` accepted as a valid transition from `ready-for-senior-review`
-- [ ] `domus task status <id> ready-for-senior-review` accepted as a valid transition from `ready-for-manual-review` (changes requested path)
-- [ ] `domus task status <id> done` accepted from `ready-for-manual-review` (merge path)
+- [ ] `domus task status <id> done` accepted as a valid transition from `ready-for-senior-review`
 - [ ] Invalid transitions rejected with a clear error
-- [ ] `domus task overview` and `domus task list` display the new statuses correctly
-- [ ] `agent-instructions.md` updated to document the full lifecycle
+- [ ] `domus task overview` and `domus task list` display `ready-for-senior-review` correctly
+- [ ] `agent-instructions.md` updated to document the current lifecycle
 - [ ] All existing task status tests pass; new tests cover the new transitions
 
 ---
 
 ## Implementation Notes
 
-Full lifecycle per ADR 005:
+**Files to touch:**
+- `src/lib/task-types.ts` — add `ready-for-senior-review` to the `TaskStatus` union
+- `src/commands/task.ts` (`cmdStatus`) — update transition validation; use a map (not hardcoded if/else) so future states slot in without rework
+- `src/commands/task-display.ts` — add display icon/label for the new status (follow existing pattern in `agent-instructions.md` icon legend)
+- `.domus/reference/agent-instructions.md` — update status table and lifecycle section
+
+**v0.1 lifecycle (this task):**
 ```
-open → in-progress → ready-for-senior-review → ready-for-manual-review → done
-                                                         ↑                   |
-                                                         └───────────────────┘
-                                                      (changes requested loop)
+open → in-progress → ready-for-senior-review → done
 ```
+
+**Future:** `ready-for-manual-review` will slot between `ready-for-senior-review` and `done` when the human review gate is added. If the transition logic is a map, this is a one-liner addition with no rework.
+
 `cancelled` and `deferred` remain valid escape hatches from any state.
