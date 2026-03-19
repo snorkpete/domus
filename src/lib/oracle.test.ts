@@ -39,8 +39,7 @@ test("prompt encodes don't-rush-to-output rule", () => {
 
 test("prompt includes spec output instructions", () => {
   const prompt = buildOraclePrompt(baseCtx);
-  expect(prompt).toContain("store/");
-  expect(prompt).toContain("specs/");
+  expect(prompt).toContain(".domus/specs/");
 });
 
 test("prompt includes spec sections", () => {

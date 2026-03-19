@@ -1,8 +1,10 @@
 import { readFileSync } from "node:fs";
-import { join } from "node:path";
-import type { Project } from "../lib/projects.ts";
+import type { Project } from "./projects.ts";
 
-const PROSE_PATH = join(import.meta.dir, "butler.md");
+const PROSE_PATH = new URL(
+  "../templates/reference/staff/roles/butler.md",
+  import.meta.url,
+);
 
 type WorkerStatusSummary = {
   running: string[];

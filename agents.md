@@ -26,10 +26,11 @@ bun run lint      # lint and format check
 
 ```
 src/
-  cli.ts          ← entry point: routing only, no business logic
-  commands/       ← one file per subcommand
-  lib/            ← shared utilities and helpers
-  personas/       ← persona system prompts and overview (see personas.md)
+  cli.ts               ← entry point: routing only, no business logic
+  commands/            ← one file per subcommand
+  lib/                 ← shared utilities and helpers
+  templates/           ← seed files written to .domus/ on domus init
+    reference/staff/   ← role prompt templates (butler, oracle, etc.)
 ```
 
 ## Act, don't defer

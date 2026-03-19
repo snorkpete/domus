@@ -9,6 +9,8 @@ const DOMUS_DIRS = [
   ".domus/specs",
   ".domus/tags",
   ".domus/reference",
+  ".domus/reference/staff",
+  ".domus/reference/staff/roles",
 ];
 
 async function buildSeedFiles(): Promise<Record<string, string>> {
@@ -30,6 +32,36 @@ async function buildSeedFiles(): Promise<Record<string, string>> {
     ).text(),
     ".domus/reference/agent-instructions.md": await Bun.file(
       new URL("../templates/reference/agent-instructions.md", import.meta.url),
+    ).text(),
+    ".domus/reference/staff/role-activation-rules.md": await Bun.file(
+      new URL(
+        "../templates/reference/staff/role-activation-rules.md",
+        import.meta.url,
+      ),
+    ).text(),
+    ".domus/reference/staff/roles/butler.md": await Bun.file(
+      new URL("../templates/reference/staff/roles/butler.md", import.meta.url),
+    ).text(),
+    ".domus/reference/staff/roles/oracle.md": await Bun.file(
+      new URL("../templates/reference/staff/roles/oracle.md", import.meta.url),
+    ).text(),
+    ".domus/reference/staff/roles/herald.md": await Bun.file(
+      new URL("../templates/reference/staff/roles/herald.md", import.meta.url),
+    ).text(),
+    ".domus/reference/staff/roles/doctor.md": await Bun.file(
+      new URL("../templates/reference/staff/roles/doctor.md", import.meta.url),
+    ).text(),
+    ".domus/reference/staff/roles/taskmaster.md": await Bun.file(
+      new URL(
+        "../templates/reference/staff/roles/taskmaster.md",
+        import.meta.url,
+      ),
+    ).text(),
+    ".domus/reference/staff/roles/worker.md": await Bun.file(
+      new URL("../templates/reference/staff/roles/worker.md", import.meta.url),
+    ).text(),
+    ".domus/reference/staff/roles/foreman.md": await Bun.file(
+      new URL("../templates/reference/staff/roles/foreman.md", import.meta.url),
     ).text(),
   };
 }

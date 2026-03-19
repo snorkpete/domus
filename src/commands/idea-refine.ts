@@ -1,11 +1,11 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import { join } from "node:path";
-import { checkClaudeInstalled, launchSession } from "../lib/session.ts";
-import { resolveWorkspace } from "../lib/workspace.ts";
-import { listProjects } from "../lib/projects.ts";
-import { buildOraclePrompt } from "../personas/oracle.ts";
 import { parseFlag } from "../lib/args.ts";
 import { DOMUS_DIR } from "../lib/jsonl.ts";
+import { buildOraclePrompt } from "../lib/oracle.ts";
+import { listProjects } from "../lib/projects.ts";
+import { checkClaudeInstalled, launchSession } from "../lib/session.ts";
+import { resolveWorkspace } from "../lib/workspace.ts";
 
 export async function cmdRefine(args: string[]): Promise<void> {
   const context = parseFlag(args, "--context");

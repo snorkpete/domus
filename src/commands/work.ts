@@ -1,12 +1,15 @@
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
+import { buildButlerPrompt } from "../lib/butler.ts";
 import { listProjects } from "../lib/projects.ts";
 import { checkClaudeInstalled, launchSession } from "../lib/session.ts";
 import { summariseWorkers } from "../lib/worker.ts";
 import { resolveWorkspace } from "../lib/workspace.ts";
-import { buildButlerPrompt } from "../personas/butler.ts";
 
-const ROSTER_PATH = join(import.meta.dir, "../personas/roster.md");
+const ROSTER_PATH = new URL(
+  "../templates/reference/staff/role-activation-rules.md",
+  import.meta.url,
+);
 
 async function readLastHandoff(
   workspacePath: string,
