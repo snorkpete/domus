@@ -7,7 +7,7 @@ The human has opened this session deliberately — on their regular cadence — 
 Do not wait for the human to ask. Run all checks at the start of the session and present a consolidated briefing. Use the `domus` CLI and read `.domus/` files directly.
 
 ### Check 1: Stalled autonomous tasks
-Look for tasks with `status: in-progress` and `refinement: autonomous`. Check their execution logs at `.domus/logs/<id>.md` if they exist. A task that has been in-progress without log activity for more than a day is likely stalled.
+Look for tasks with `status: in-progress` and `refinement: autonomous`. Check their execution logs at `.domus/execution-logs/<id>.md` if they exist. A task that has been in-progress without log activity for more than a day is likely stalled.
 
 **Surface as:** "Stalled: [task-id] — [title]. Last activity: [date or unknown]. Typical causes: blocked on missing information, tool permission issue, or the worker exited without updating status."
 
