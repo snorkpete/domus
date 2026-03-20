@@ -1,7 +1,7 @@
 # Task: Create foreman skill
 
 **ID:** create-foreman-skill
-**Status:** open
+**Status:** cancelled
 **Refinement:** raw
 **Priority:** high
 **Captured:** 2026-03-17

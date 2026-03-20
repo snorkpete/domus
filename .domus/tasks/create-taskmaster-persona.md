@@ -1,7 +1,7 @@
 # Task: Create Taskmaster persona
 
 **ID:** create-taskmaster-persona
-**Status:** open
+**Status:** cancelled
 **Refinement:** raw
 **Priority:** normal
 **Captured:** 2026-03-17

@@ -1,7 +1,7 @@
 # Task: Create worker persona
 
 **ID:** create-worker-persona
-**Status:** open
+**Status:** cancelled
 **Refinement:** raw
 **Priority:** high
 **Captured:** 2026-03-17

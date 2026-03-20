@@ -1,7 +1,7 @@
 # Task: Align execution pipeline with ADR 004/005 design
 
 **ID:** align-execution-pipeline-with-adr-004005-design
-**Status:** open
+**Status:** done
 **Refinement:** raw
 **Priority:** high
 **Captured:** 2026-03-19

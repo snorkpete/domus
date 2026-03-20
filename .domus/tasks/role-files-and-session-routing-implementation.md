@@ -1,8 +1,9 @@
 # Task: Role files and session routing implementation
 
 **ID:** role-files-and-session-routing-implementation
-**Status:** open
-**Refinement:** raw
+**Status:** done
+**Branch:** task/role-files-and-session-routing-implementation
+**Refinement:** autonomous
 **Priority:** high
 **Captured:** 2026-03-19
 **Parent:** align-execution-pipeline-with-adr-004005-design
@@ -14,7 +15,7 @@
 
 ## What This Task Is
 
-Write the three stub role files and fix stale path references in existing role files. This is subtask 3 of the `align-execution-pipeline-with-adr-004005-design` epic — check the parent for the full audit context and cross-subtask scope.
+Write the three full role files and fix stale path references in existing role files. This is subtask 3 of the `align-execution-pipeline-with-adr-004005-design` epic — check the parent for the full audit context and cross-subtask scope.
 
 Worker, Foreman, and Taskmaster role files currently contain only `*Role file not yet written.*`. Herald and Doctor reference `.domus/logs/` which doesn't match ADR 004's `.domus/execution-logs/`.
 
@@ -22,13 +23,14 @@ Worker, Foreman, and Taskmaster role files currently contain only `*Role file no
 
 ## Acceptance Criteria
 
-- [ ] `worker.md` — full role file written with system prompt, execution protocol, logging instructions (use `domus task log`), and close-out behaviour
-- [ ] `foreman.md` — full role file written covering Route, Advance, Send Back, and Merge and Close capabilities
-- [ ] `taskmaster.md` — full role file written covering two-phase refinement (what/how), `domus task update` usage, and handoff protocol
-- [ ] `herald.md` — execution log path updated to `.domus/execution-logs/<id>.md`
-- [ ] `doctor.md` — execution log path updated to `.domus/execution-logs/<id>.md`
+- [ ] `worker.md` — full, self-contained role file: system prompt, execution protocol, logging instructions (use `domus task log`), close-out behaviour, ADR pointers for background
+- [ ] `foreman.md` — full, self-contained role file: Route, Advance, and Merge and Close capabilities (Send Back deferred to v0.1), ADR pointers for background
+- [ ] `taskmaster.md` — full, self-contained role file: two-phase refinement (what/how), `domus task update` usage, handoff protocol, ADR pointers for background
+- [ ] `herald.md` — execution log path updated to `.domus/execution-logs/<task-id>.md`
+- [ ] `doctor.md` — execution log path updated to `.domus/execution-logs/<task-id>.md`
 - [ ] Template copies in `src/templates/reference/staff/roles/` updated to match
 - [ ] Butler routing verified: `role-activation-rules.md` contains sufficient information for Butler to route to the right role
+- [ ] `create-worker-persona`, `create-foreman-skill`, `create-taskmaster-persona` cancelled (superseded by this task)
 
 ---
 
