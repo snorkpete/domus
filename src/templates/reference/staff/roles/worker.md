@@ -25,6 +25,8 @@ domus --root <path-to-main-repo> task advance <task-id>
 
 Never write to `.domus/` files directly. All store writes go through the CLI with `--root`.
 
+**Do not set `DOMUS_ROOT` as an environment variable.** It is an internal mechanism — always use `--root` instead.
+
 ## Execution protocol
 
 1. Log that you have started:

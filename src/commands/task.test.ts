@@ -3,7 +3,7 @@ import { existsSync } from "node:fs";
 import { mkdtemp, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { runTask } from "./task.ts";
+import { runTask } from "./task/index.ts";
 
 let tempDir: string;
 let originalCwd: string;
@@ -827,6 +827,8 @@ test("ready: unblocked after dependency is done", async () => {
 
 test("start: transitions task to in-progress and records branch in JSONL", async () => {
   await runTask(["add", "--title", "My Task"]);
+  await runTask(["advance", "my-task"]); // raw → proposed
+  await runTask(["advance", "my-task"]); // proposed → ready
   await runTask(["start", "my-task", "--branch", "task/my-task"]);
 
   const tasks = await readTasksJsonl();
@@ -836,6 +838,8 @@ test("start: transitions task to in-progress and records branch in JSONL", async
 
 test("start: creates execution log file with started header", async () => {
   await runTask(["add", "--title", "My Task"]);
+  await runTask(["advance", "my-task"]); // raw → proposed
+  await runTask(["advance", "my-task"]); // proposed → ready
   await runTask(["start", "my-task", "--branch", "task/my-task"]);
 
   const logPath = join(tempDir, ".domus", "execution-logs", "my-task.md");
@@ -874,6 +878,8 @@ test("start: exits without --branch", async () => {
 
 test("log: appends entry to execution log file", async () => {
   await runTask(["add", "--title", "My Task"]);
+  await runTask(["advance", "my-task"]);
+  await runTask(["advance", "my-task"]);
   await runTask(["start", "my-task", "--branch", "task/my-task"]);
   await runTask(["log", "my-task", "Implemented the feature"]);
 
@@ -884,6 +890,8 @@ test("log: appends entry to execution log file", async () => {
 
 test("log: appends event to audit.jsonl", async () => {
   await runTask(["add", "--title", "My Task"]);
+  await runTask(["advance", "my-task"]);
+  await runTask(["advance", "my-task"]);
   await runTask(["start", "my-task", "--branch", "task/my-task"]);
   await runTask(["log", "my-task", "Step complete"]);
 

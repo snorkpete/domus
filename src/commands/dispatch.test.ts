@@ -3,7 +3,7 @@ import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { runDispatch } from "./dispatch.ts";
-import { runTask } from "./task.ts";
+import { runTask } from "./task/index.ts";
 
 let tempDir: string;
 let originalCwd: string;

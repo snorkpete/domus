@@ -1,4 +1,8 @@
-import type { TaskEntry, TaskPriority, TaskStatus } from "../lib/task-types.ts";
+import type {
+  TaskEntry,
+  TaskPriority,
+  TaskStatus,
+} from "../../lib/task-types.ts";
 
 // ── ANSI helpers ──────────────────────────────────────────────────────────────
 
@@ -29,22 +33,42 @@ export const STATUS_ICON: Record<TaskStatus | "blocked", string> = {
 // ── Coloring ──────────────────────────────────────────────────────────────────
 
 export function priorityAnsi(icon: string, priority: TaskPriority): string {
-  if (priority === "high") return ansi("33;1", icon); // yellow bold
-  if (priority === "low") return ansi("2", icon); // dim
-  return icon;
+  switch (priority) {
+    case "high":
+      return ansi("33;1", icon); // yellow bold
+    case "low":
+      return ansi("2", icon); // dim
+    default:
+      return icon;
+  }
 }
 
 export function statusAnsi(icon: string, status: TaskStatus): string {
-  if (status === "in-progress") return ansi("36", icon); // cyan
-  if (status === "ready") return ansi("32", icon); // green
-  if (status === "done") return ansi("32", icon); // green
-  if (status === "cancelled") return ansi("2", icon); // dim
-  return icon;
+  switch (status) {
+    case "in-progress":
+      return ansi("36", icon); // cyan
+    case "ready":
+    case "done":
+      return ansi("32", icon); // green
+    case "cancelled":
+      return ansi("2", icon); // dim
+    default:
+      return icon;
+  }
 }
 
 export function lineAnsi(line: string, status: TaskStatus): string {
-  const code = status === "in-progress" ? "36" : status === "done" ? "2" : null;
-  if (!code) return line;
+  let code: string | null = null;
+  if (status === "in-progress") {
+    code = "36";
+  } else if (status === "done") {
+    code = "2";
+  }
+
+  if (!code) {
+    return line;
+  }
+
   const reapply = `\x1b[0m\x1b[${code}m`;
   return `\x1b[${code}m${line.replace(/\x1b\[0m/g, reapply)}\x1b[0m`;
 }
@@ -74,25 +98,20 @@ export function formatBlockedTree(
   const sIcon = statusAnsi(STATUS_ICON[t.status] ?? "?", t.status);
   const lines: string[] = [];
   lines.push(lineAnsi(`${t.id}  ${pIcon} ${sIcon}`, t.status));
+
   const unresolvedDeps = t.depends_on.filter((dep) => !done.has(dep));
   const termWidth = process.stdout.columns ?? 80;
+
   for (const depId of unresolvedDeps) {
     const dep = taskMap.get(depId);
-    if (dep) {
-      const depPIcon = PRIORITY_ICON[dep.priority] ?? "·";
-      const depSIcon = STATUS_ICON[dep.status] ?? "?";
-      const prefix = `  · ${depPIcon} ${depSIcon}  `;
-      const maxIdLen = termWidth - prefix.length;
-      const displayId =
-        dep.id.length > maxIdLen ? `${dep.id.slice(0, maxIdLen - 1)}…` : dep.id;
-      lines.push(ansi("2", `${prefix}${displayId}`));
-    } else {
-      const prefix = "  · ";
-      const maxIdLen = termWidth - prefix.length;
-      const displayId =
-        depId.length > maxIdLen ? `${depId.slice(0, maxIdLen - 1)}…` : depId;
-      lines.push(ansi("2", `${prefix}${displayId}`));
-    }
+    const prefix = dep
+      ? `  · ${PRIORITY_ICON[dep.priority] ?? "·"} ${STATUS_ICON[dep.status] ?? "?"}  `
+      : "  · ";
+    const maxIdLen = termWidth - prefix.length;
+    const displayId =
+      depId.length > maxIdLen ? `${depId.slice(0, maxIdLen - 1)}…` : depId;
+    lines.push(ansi("2", `${prefix}${displayId}`));
   }
+
   return lines;
 }

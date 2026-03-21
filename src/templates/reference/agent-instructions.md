@@ -38,7 +38,15 @@ Boolean on each task, always present in frontmatter (`**Autonomous:** true` or `
 - `domus task cancel <id> [--note <text>]` — cancel from any active state
 - `domus task defer <id> [--note <text>]` — defer from any active state
 - `domus task reopen <id>` — reopen cancelled/deferred → raw
-- `domus task status <id> <value>` — Doctor power tool only, not for normal workflow
+- `domus task status <id> <value>` — Doctor power tool only, not for normal workflow. Only use this when fixing data consistency issues (e.g. a task stuck in the wrong status). All normal workflow goes through the commands above.
+
+### The `--root` flag
+
+When running in a worktree or targeting a different project's store, use `--root <path>` on all domus commands. Never set the `DOMUS_ROOT` environment variable directly — it is an internal mechanism used by `cli.ts` after parsing `--root`.
+
+```
+domus --root /path/to/main-repo task log <id> "message"
+```
 
 ## Task overview grouping
 

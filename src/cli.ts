@@ -3,7 +3,7 @@ import { version } from "../package.json";
 import { runDispatch } from "./commands/dispatch.ts";
 import { runIdea } from "./commands/idea.ts";
 import { runInit } from "./commands/init.ts";
-import { runTask } from "./commands/task.ts";
+import { runTask } from "./commands/task/index.ts";
 import { stripRoot } from "./lib/root.ts";
 
 export { stripRoot };
@@ -13,7 +13,7 @@ Domus — per-project workflow tool
 
 Usage:
   domus idea                     Manage ideas (domus idea --help)
-  domus init                     Initialise a .domus/ directory
+  domus init                     Initialise or update a .domus/ directory
   domus dispatch <task-id>       Dispatch a worker for a task
   domus task <subcommand>        Manage project tasks
 
@@ -24,7 +24,9 @@ Global Options:
 `.trim();
 
 const { root, rest: args } = stripRoot(process.argv.slice(2));
-if (root) process.env.DOMUS_ROOT = root;
+if (root) {
+  process.env.DOMUS_ROOT = root;
+}
 const command = args[0];
 
 async function main() {

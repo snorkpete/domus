@@ -1,6 +1,6 @@
 import { projectRoot } from "../lib/jsonl.ts";
 import { readTasks } from "../lib/task-store.ts";
-import { runTask } from "./task.ts";
+import { runTask } from "./task/index.ts";
 
 export async function runDispatch(args: string[]): Promise<void> {
   const taskId = args[0];
@@ -18,7 +18,6 @@ export async function runDispatch(args: string[]): Promise<void> {
     process.exit(1);
   }
 
-  // Must be ready status
   if (task.status !== "ready") {
     console.error(
       `Task ${taskId} is not dispatchable (status: ${task.status}). Must be ready.`,
@@ -26,7 +25,6 @@ export async function runDispatch(args: string[]): Promise<void> {
     process.exit(1);
   }
 
-  // Must be autonomous
   if (!task.autonomous) {
     console.error(
       `Task ${taskId} is not autonomous. Only autonomous tasks can be dispatched.`,
@@ -34,11 +32,9 @@ export async function runDispatch(args: string[]): Promise<void> {
     process.exit(1);
   }
 
-  if (task.status === "ready") {
-    const branch = `task/${taskId}`;
-    console.log(`Starting task ${taskId} on branch ${branch}...`);
-    await runTask(["start", taskId, "--branch", branch]);
-  }
+  const branch = `task/${taskId}`;
+  console.log(`Starting task ${taskId} on branch ${branch}...`);
+  await runTask(["start", taskId, "--branch", branch]);
 
   console.log();
   console.log(`Task ${taskId} is ready for dispatch.`);

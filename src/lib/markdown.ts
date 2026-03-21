@@ -17,6 +17,26 @@ export function updateBoldField(
 }
 
 /**
+ * Updates a `**Label:** value` line, or inserts it after `**AfterLabel:**` if missing.
+ */
+export function upsertBoldField(
+  content: string,
+  label: string,
+  value: string,
+  afterLabel: string,
+): string {
+  const fieldRegex = new RegExp(`^\\*\\*${escapeRegex(label)}:\\*\\* .+$`, "m");
+  if (fieldRegex.test(content)) {
+    return updateBoldField(content, label, value);
+  }
+  // Insert after the afterLabel line
+  return content.replace(
+    new RegExp(`^(\\*\\*${escapeRegex(afterLabel)}:\\*\\* .+)$`, "m"),
+    `$1\n**${label}:** ${value}`,
+  );
+}
+
+/**
  * Updates a `# Prefix: Title` heading line in markdown content.
  */
 export function updateMarkdownTitle(

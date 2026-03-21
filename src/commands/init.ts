@@ -239,11 +239,15 @@ export async function runInit(
   // Report
   if (created.length > 0) {
     console.log("Created:");
-    for (const f of created) console.log(`  + ${f}`);
+    for (const f of created) {
+      console.log(`  + ${f}`);
+    }
   }
   if (skipped.length > 0) {
     console.log("Already exists (skipped):");
-    for (const f of skipped) console.log(`  · ${f}`);
+    for (const f of skipped) {
+      console.log(`  · ${f}`);
+    }
   }
   const settingsVerb = settingsExisted ? "updated" : "created";
   console.log(`  + .claude/settings.json ${settingsVerb} (permissions + PATH)`);

@@ -81,7 +81,7 @@ test("stripRoot: expands tilde in path", async () => {
 });
 
 test("stripRoot: exits with code 1 when --root path does not exist", () => {
-  let exitCode: number | null = null;
+  let exitCode: number | undefined;
   const origExit = process.exit;
   process.exit = ((code: number) => {
     exitCode = code;
@@ -98,7 +98,7 @@ test("stripRoot: exits with code 1 when --root path does not exist", () => {
 });
 
 test("stripRoot: exits with code 1 when --root has no argument", () => {
-  let exitCode: number | null = null;
+  let exitCode: number | undefined;
   const origExit = process.exit;
   process.exit = ((code: number) => {
     exitCode = code;
