@@ -70,6 +70,7 @@ export function lineAnsi(line: string, status: TaskStatus): string {
   }
 
   const reapply = `\x1b[0m\x1b[${code}m`;
+  // biome-ignore lint/suspicious/noControlCharactersInRegex: matching ANSI escape sequences
   return `\x1b[${code}m${line.replace(/\x1b\[0m/g, reapply)}\x1b[0m`;
 }
 

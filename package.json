@@ -9,7 +9,7 @@
     "build": "bun build src/cli.ts --outdir dist --target bun",
     "dev": "bun run src/cli.ts",
     "test": "bun test",
-    "lint": "biome check ."
+    "lint": "biome check --write ."
   },
   "devDependencies": {
     "@biomejs/biome": "^1.9.4",
