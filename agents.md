@@ -58,6 +58,7 @@ If a task genuinely requires a tool outside the pre-approved set, log it via `do
 - Prefer Bun's native APIs (`Bun.file`, `Bun.spawn`, `Bun.spawnSync`) over adding packages.
 - Targeted file edits over full rewrites — preserve context, don't regenerate.
 - Aim for a single commit per task. If changes naturally require multiple commits, that is a signal the task may be too large — log it via `domus task log`.
+- Run `bun run lint` before committing. Fix any errors — the pre-commit hook will reject the commit otherwise.
 
 ## Architectural decisions
 

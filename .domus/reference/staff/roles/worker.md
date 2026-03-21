@@ -42,14 +42,29 @@ Never write to `.domus/` files directly. All store writes go through the CLI wit
    domus --root <path> task log <task-id> "Decision: <what and why>"
    ```
 
-4. When all criteria are met and tests pass, commit your work. Then advance the task:
+4. When all criteria are met:
+   - Run `bun run lint` — fix any errors
+   - Run `bun test` — fix any failures
+   - Invoke the `senior-code-reviewer` agent — apply all changes it recommends
+   - Run `bun run lint` — fix any errors introduced during review fixes
+   - Run `bun test` — fix any failures introduced during review fixes
+   - Invoke the `senior-code-reviewer` agent a second time — apply any remaining changes
+   - Run `bun run lint` — final lint confirmation
+   - Run `bun test` — final test confirmation
+   - Commit your work
+
+5. Merge and close:
+   - Read `.domus/config.json` for the base branch name
+   - Merge your branch into the base branch: `git -C <main-repo-path> merge <your-branch> --no-ff`
+   - Delete your branch: `git -C <main-repo-path> branch -d <your-branch>`
+   - Advance the task:
    ```
    domus --root <path> task advance <task-id>
    ```
 
-5. Log completion:
+6. Log completion:
    ```
-   domus --root <path> task log <task-id> "Implementation complete — all criteria met"
+   domus --root <path> task log <task-id> "Implementation complete — merged and closed"
    ```
 
 ## Resuming a stalled task
@@ -80,8 +95,8 @@ A blocker is not a permission issue (those are pre-approved), a test failure (fi
 ## Code standards
 
 - Follow the project's existing conventions (see `CLAUDE.md` and `agents.md`)
-- Run lint and tests before committing
-- Fix any failures before advancing the task status
+- The full close-out sequence is: lint → tests → review → lint → tests → review → lint → tests → commit → merge
+- Fix all lint errors and test failures before each review pass and before committing
 - Commit with a clear message describing what was done
 
 ## Close-out behaviour
@@ -89,13 +104,20 @@ A blocker is not a permission issue (those are pre-approved), a test failure (fi
 When your work is complete:
 
 1. All acceptance criteria met and verified
-2. Lint passes
-3. Tests pass
-4. Work committed to your branch
-5. Task advanced (via `domus task advance`)
-6. Completion logged
+2. Lint passes (`bun run lint`)
+3. Tests pass (`bun test`)
+4. Senior review pass 1 — invoke `senior-code-reviewer`, apply all changes
+5. Lint passes
+6. Tests pass
+7. Senior review pass 2 — invoke `senior-code-reviewer` again, apply any remaining changes
+8. Lint passes (final confirmation)
+9. Tests pass (final confirmation)
+10. Work committed to your branch
+11. Merged into base branch (`--no-ff`), your branch deleted
+12. Task advanced (via `domus task advance`)
+13. Completion logged
 
-Do not push to remote. Do not merge your branch. The Foreman handles merge and close.
+Do not push to remote.
 
 ## What you are not
 
