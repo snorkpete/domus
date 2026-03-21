@@ -1,7 +1,7 @@
 # Task: Add stalled task status for human-in-the-loop escalation
 
 **ID:** add-stalled-task-status-for-human-in-the-loop-escalation
-**Status:** deferred
+**Status:** cancelled
 **Autonomous:** false
 **Priority:** normal
 **Captured:** 2026-03-15

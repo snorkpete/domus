@@ -13,3 +13,6 @@
 {"id":"add-domus-set-branch-command","message":"Completed: updated agent-instructions template and live .domus/reference/agent-instructions.md with set-branch trigger rules","timestamp":"2026-03-21T08:51:24.730Z","branch":"task/add-domus-set-branch-command"}
 {"id":"add-domus-set-branch-command","message":"Completed: updated docs/cli-reference.md with domus config set-branch documentation","timestamp":"2026-03-21T08:51:27.168Z","branch":"task/add-domus-set-branch-command"}
 {"id":"add-domus-set-branch-command","message":"Implementation complete — merged and closed","timestamp":"2026-03-21T08:52:18.664Z","branch":"task/add-domus-set-branch-command"}
+{"id":"show-deferred-tasks-in-overview-and-watch","message":"Worker started","timestamp":"2026-03-21T14:01:09.343Z","branch":"task/show-deferred-tasks-in-overview-and-watch"}
+{"id":"show-deferred-tasks-in-overview-and-watch","message":"Completed: added --include-deferred and --include-cancelled flags to overview.ts; added 6 test cases covering default hidden behavior, flag behavior, independence, and section order","timestamp":"2026-03-21T14:02:30.847Z","branch":"task/show-deferred-tasks-in-overview-and-watch"}
+{"id":"show-deferred-tasks-in-overview-and-watch","message":"Implementation complete — merged and closed","timestamp":"2026-03-21T14:03:10.558Z","branch":"task/show-deferred-tasks-in-overview-and-watch"}
