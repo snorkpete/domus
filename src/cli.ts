@@ -4,6 +4,7 @@ import { runDispatch } from "./commands/dispatch.ts";
 import { runIdea } from "./commands/idea.ts";
 import { runInit } from "./commands/init.ts";
 import { runTask } from "./commands/task/index.ts";
+import { runUpdate } from "./commands/update.ts";
 import { stripRoot } from "./lib/root.ts";
 
 export { stripRoot };
@@ -13,7 +14,8 @@ Domus — per-project workflow tool
 
 Usage:
   domus idea                     Manage ideas (domus idea --help)
-  domus init                     Initialise or update a .domus/ directory
+  domus init                     Initialise a .domus/ directory
+  domus update                   Update an existing .domus/ directory and migrate schemas
   domus dispatch <task-id>       Dispatch a worker for a task
   domus task <subcommand>        Manage project tasks
 
@@ -47,6 +49,10 @@ async function main() {
 
     case "init":
       await runInit(args.slice(1));
+      break;
+
+    case "update":
+      await runUpdate(args.slice(1));
       break;
 
     case "dispatch":
