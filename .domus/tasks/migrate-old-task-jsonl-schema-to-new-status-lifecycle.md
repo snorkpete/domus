@@ -1,7 +1,7 @@
 # Task: Migrate old task JSONL schema to new status lifecycle
 
 **ID:** migrate-old-task-jsonl-schema-to-new-status-lifecycle
-**Status:** in-progress
+**Status:** done
 **Branch:** task/migrate-old-task-jsonl-schema-to-new-status-lifecycle
 **Autonomous:** true
 **Priority:** high

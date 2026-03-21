@@ -35,3 +35,13 @@ Completed: migrateTaskSchema migrates tasks.jsonl and .md files per mapping; mig
 Resuming — last completed: migrateTaskSchema migrates tasks.jsonl and .md files per mapping; 26 new tests pass. Lint clean, all 140 tests pass. Proceeding to senior review.
 
 ---
+## 2026-03-21T08:25:18.041Z
+
+in-progress → done
+
+---
+## 2026-03-21T08:25:21.693Z
+
+Implementation complete — merged and closed. Fixed bug during review: writeOwnedFiles was overwriting tasks.jsonl and ideas.jsonl on update; fixed by splitting managed files (roles, reference, tags) from seed files (user data) — seed files are now always skip-if-exists regardless of overwrite flag.
+
+---
