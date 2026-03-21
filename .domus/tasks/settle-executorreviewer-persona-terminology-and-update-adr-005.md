@@ -1,8 +1,8 @@
 # Task: Settle executor/reviewer persona terminology and update ADR 005
 
 **ID:** settle-executorreviewer-persona-terminology-and-update-adr-005
-**Status:** open
-**Refinement:** raw
+**Status:** raw
+**Autonomous:** false
 **Priority:** normal
 **Captured:** 2026-03-17
 **Parent:** none

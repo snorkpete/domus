@@ -2,7 +2,7 @@
 
 **ID:** fix-worktreehasnewcommits-hardcodes-master-as-base-branch
 **Status:** cancelled
-**Refinement:** raw
+**Autonomous:** false
 **Priority:** normal
 **Captured:** 2026-03-14
 **Parent:** none

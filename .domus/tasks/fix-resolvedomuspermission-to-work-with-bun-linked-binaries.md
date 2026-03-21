@@ -2,7 +2,7 @@
 
 **ID:** fix-resolvedomuspermission-to-work-with-bun-linked-binaries
 **Status:** done
-**Refinement:** raw
+**Autonomous:** false
 **Priority:** low
 **Captured:** 2026-03-14
 **Parent:** none

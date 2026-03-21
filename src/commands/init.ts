@@ -7,7 +7,6 @@ import type { DomusConfig } from "../lib/jsonl.ts";
 const DOMUS_DIRS = [
   ".domus/ideas",
   ".domus/tasks",
-  ".domus/specs",
   ".domus/tags",
   ".domus/reference",
   ".domus/reference/staff",

@@ -2,7 +2,7 @@
 
 **ID:** add-stalled-task-status-for-human-in-the-loop-escalation
 **Status:** deferred
-**Refinement:** raw
+**Autonomous:** false
 **Priority:** normal
 **Captured:** 2026-03-15
 **Parent:** none

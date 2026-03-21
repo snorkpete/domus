@@ -2,7 +2,7 @@
 
 **ID:** add-outcome-flag-to-domus-task-create-and-update
 **Status:** done
-**Refinement:** autonomous
+**Autonomous:** true
 **Priority:** normal
 **Captured:** 2026-03-17
 **Parent:** none

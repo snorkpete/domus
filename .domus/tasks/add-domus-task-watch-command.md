@@ -2,7 +2,7 @@
 
 **ID:** add-domus-task-watch-command
 **Status:** done
-**Refinement:** autonomous
+**Autonomous:** true
 **Priority:** normal
 **Captured:** 2026-03-15
 **Parent:** none

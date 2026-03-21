@@ -2,7 +2,7 @@
 
 **ID:** domus-commands-walk-up-to-find-domus-directory
 **Status:** deferred
-**Refinement:** raw
+**Autonomous:** false
 **Priority:** normal
 **Captured:** 2026-03-14
 **Parent:** none

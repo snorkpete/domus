@@ -2,7 +2,7 @@
 
 **ID:** define-execution-steps-as-part-of-auto-task-refinement
 **Status:** deferred
-**Refinement:** raw
+**Autonomous:** false
 **Priority:** normal
 **Captured:** 2026-03-15
 **Parent:** none

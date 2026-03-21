@@ -2,7 +2,7 @@
 
 **ID:** add-proposed-refinement-status-between-raw-and-refined
 **Status:** done
-**Refinement:** autonomous
+**Autonomous:** true
 **Priority:** normal
 **Captured:** 2026-03-15
 **Parent:** none

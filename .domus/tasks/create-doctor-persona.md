@@ -2,7 +2,7 @@
 
 **ID:** create-doctor-persona
 **Status:** deferred
-**Refinement:** raw
+**Autonomous:** false
 **Priority:** normal
 **Captured:** 2026-03-17
 **Parent:** none

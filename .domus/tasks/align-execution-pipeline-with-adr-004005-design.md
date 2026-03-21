@@ -2,7 +2,7 @@
 
 **ID:** align-execution-pipeline-with-adr-004005-design
 **Status:** done
-**Refinement:** raw
+**Autonomous:** false
 **Priority:** high
 **Captured:** 2026-03-19
 **Parent:** none

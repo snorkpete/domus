@@ -24,21 +24,28 @@ Autonomous execution is a state machine. Domus owns the state transitions. Perso
 ### Task status lifecycle
 
 ```
-open → in-progress → ready-for-senior-review → ready-for-manual-review → done
-                              ↑                          |
-                              └──────────────────────────┘
-                                    (human sends back)
+raw → proposed → ready → in-progress → [ready-for-senior-review →] done
 ```
 
-- **open** — task exists, work has not started
+- **raw** — just captured, needs refinement
+- **proposed** — Taskmaster has done a refinement pass (criteria written, shape clear) but the human hasn't reviewed yet
+- **ready** — human approved, waiting for dispatch
 - **in-progress** — active work is happening or has happened; resuming picks up here
-- **ready-for-senior-review** — implementation committed; senior reviewer checks for existing MR comments and applies them if found, otherwise reviews code and applies updates, then advances
-- **ready-for-manual-review** — human reviews; can approve (→ done) or send back (→ ready-for-senior-review). Human triggers these transitions via foreman skills. Not present in v0 — added in v0.1.
+- **ready-for-senior-review** — implementation committed; senior reviewer persona checks code. Skipped by `advance` in v0.0 (goes directly to done).
+- **ready-for-manual-review** — human reviews; can approve (→ done) or send back (→ ready-for-senior-review). Not present in v0.0 — added in v0.1.
 - **done** — code merged
 
-`cancelled` and `deferred` are available at any state as escape hatches.
-- **cancelled** — work will not happen; task is closed permanently
-- **deferred** — work is paused; task remains available for future consideration
+`cancelled` and `deferred` are available from any state as escape hatches. `reopen` returns cancelled/deferred tasks to `raw`.
+
+### The `autonomous` flag
+
+Boolean on each task (`autonomous: true/false`), always present in frontmatter. Controls whether the task can be dispatched to a Worker for autonomous execution. Default `true` when transitioning to `ready` in v0.0.
+
+### CLI commands
+
+- `domus task advance <id>` — primary forward transition. State engine decides next status.
+- `domus task cancel <id>`, `domus task defer <id>`, `domus task reopen <id>` — named escape hatches.
+- `domus task status <id> <value>` — Doctor power tool for corrective action only.
 
 ### The foreman skill
 
@@ -63,7 +70,8 @@ Domus does not orchestrate execution. It owns state transitions and logging. The
 
 - `domus task start <id> --branch <branch>` — marks in-progress, records branch, creates execution log. Called by Claude after the worktree and branch are created.
 - `domus task log <id> <message>` — appends timestamped entry to execution log and audit log
-- `domus task status <id> <new-status>` — transitions state with validation
+- `domus task advance <id>` — forward transition via state engine
+- `domus task status <id> <new-status>` — Doctor power tool, transitions with validation
 
 Personas call these at known checkpoints. Domus ensures the transitions are consistent regardless of which persona made them.
 

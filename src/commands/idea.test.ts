@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, expect, test } from "bun:test";
-import { readFile, mkdtemp, rm } from "node:fs/promises";
+import { mkdtemp, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { runIdea } from "./idea.ts";
@@ -25,7 +25,12 @@ function trapExit(): { didExit: () => boolean; restore: () => void } {
     _exited = true;
     throw new Error("process.exit");
   }) as never;
-  return { didExit: () => _exited, restore: () => { process.exit = orig; } };
+  return {
+    didExit: () => _exited,
+    restore: () => {
+      process.exit = orig;
+    },
+  };
 }
 
 function captureOutput(): { lines: () => string[]; restore: () => void } {
@@ -36,14 +41,20 @@ function captureOutput(): { lines: () => string[]; restore: () => void } {
   console.error = (...args: unknown[]) => _lines.push(args.join(" "));
   return {
     lines: () => _lines,
-    restore: () => { console.log = origLog; console.error = origErr; },
+    restore: () => {
+      console.log = origLog;
+      console.error = origErr;
+    },
   };
 }
 
 async function readIdeasJsonl(): Promise<Record<string, unknown>[]> {
   const path = join(tempDir, ".domus", "ideas", "ideas.jsonl");
   const content = await readFile(path, "utf-8");
-  return content.split("\n").filter((l) => l.trim()).map((l) => JSON.parse(l));
+  return content
+    .split("\n")
+    .filter((l) => l.trim())
+    .map((l) => JSON.parse(l));
 }
 
 async function readIdeaMd(id: string): Promise<string> {
@@ -53,7 +64,15 @@ async function readIdeaMd(id: string): Promise<string> {
 // ── add ───────────────────────────────────────────────────────────────────────
 
 test("add: creates JSONL entry with correct fields", async () => {
-  await runIdea(["add", "--title", "My Idea", "--summary", "A summary", "--tags", "devex,product"]);
+  await runIdea([
+    "add",
+    "--title",
+    "My Idea",
+    "--summary",
+    "A summary",
+    "--tags",
+    "devex,product",
+  ]);
 
   const ideas = await readIdeasJsonl();
   expect(ideas).toHaveLength(1);
@@ -98,7 +117,9 @@ test("add: exits without --title", async () => {
   const trap = trapExit();
   try {
     await runIdea(["add"]);
-  } catch { /* expected */ } finally {
+  } catch {
+    /* expected */
+  } finally {
     trap.restore();
   }
   expect(trap.didExit()).toBe(true);
@@ -108,7 +129,9 @@ test("add: exits on invalid --status value", async () => {
   const trap = trapExit();
   try {
     await runIdea(["add", "--title", "My Idea", "--status", "bogus"]);
-  } catch { /* expected */ } finally {
+  } catch {
+    /* expected */
+  } finally {
     trap.restore();
   }
   expect(trap.didExit()).toBe(true);
@@ -148,7 +171,9 @@ test("status: requires --outcome for abandoned", async () => {
   const trap = trapExit();
   try {
     await runIdea(["status", "my-idea", "abandoned"]);
-  } catch { /* expected */ } finally {
+  } catch {
+    /* expected */
+  } finally {
     trap.restore();
   }
   expect(trap.didExit()).toBe(true);
@@ -159,7 +184,9 @@ test("status: requires --outcome for deferred", async () => {
   const trap = trapExit();
   try {
     await runIdea(["status", "my-idea", "deferred"]);
-  } catch { /* expected */ } finally {
+  } catch {
+    /* expected */
+  } finally {
     trap.restore();
   }
   expect(trap.didExit()).toBe(true);
@@ -177,7 +204,9 @@ test("status: exits on unknown id", async () => {
   const trap = trapExit();
   try {
     await runIdea(["status", "no-such-idea", "refined"]);
-  } catch { /* expected */ } finally {
+  } catch {
+    /* expected */
+  } finally {
     trap.restore();
   }
   expect(trap.didExit()).toBe(true);
@@ -188,7 +217,9 @@ test("status: exits on invalid status value", async () => {
   const trap = trapExit();
   try {
     await runIdea(["status", "my-idea", "invalid"]);
-  } catch { /* expected */ } finally {
+  } catch {
+    /* expected */
+  } finally {
     trap.restore();
   }
   expect(trap.didExit()).toBe(true);
@@ -244,7 +275,15 @@ test("list --status: filters by status", async () => {
 // ── show ──────────────────────────────────────────────────────────────────────
 
 test("show: prints detail for a known idea", async () => {
-  await runIdea(["add", "--title", "My Idea", "--summary", "A summary", "--tags", "devex"]);
+  await runIdea([
+    "add",
+    "--title",
+    "My Idea",
+    "--summary",
+    "A summary",
+    "--tags",
+    "devex",
+  ]);
 
   const out = captureOutput();
   try {
@@ -262,7 +301,9 @@ test("show: exits on unknown id", async () => {
   const trap = trapExit();
   try {
     await runIdea(["show", "no-such-idea"]);
-  } catch { /* expected */ } finally {
+  } catch {
+    /* expected */
+  } finally {
     trap.restore();
   }
   expect(trap.didExit()).toBe(true);
@@ -301,7 +342,9 @@ test("update: exits on unknown id", async () => {
   const trap = trapExit();
   try {
     await runIdea(["update", "no-such-idea", "--title", "X"]);
-  } catch { /* expected */ } finally {
+  } catch {
+    /* expected */
+  } finally {
     trap.restore();
   }
   expect(trap.didExit()).toBe(true);
@@ -312,7 +355,9 @@ test("update: exits with no flags", async () => {
   const trap = trapExit();
   try {
     await runIdea(["update", "my-idea"]);
-  } catch { /* expected */ } finally {
+  } catch {
+    /* expected */
+  } finally {
     trap.restore();
   }
   expect(trap.didExit()).toBe(true);

@@ -2,7 +2,7 @@
 
 **ID:** migrate-dispatch-from-ticket-format-to-task-file-format
 **Status:** done
-**Refinement:** proposed
+**Autonomous:** false
 **Priority:** high
 **Captured:** 2026-03-16
 **Parent:** none

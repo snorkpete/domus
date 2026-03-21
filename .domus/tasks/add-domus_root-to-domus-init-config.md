@@ -2,7 +2,7 @@
 
 **ID:** add-domus_root-to-domus-init-config
 **Status:** cancelled
-**Refinement:** raw
+**Autonomous:** false
 **Priority:** high
 **Captured:** 2026-03-15
 **Parent:** none

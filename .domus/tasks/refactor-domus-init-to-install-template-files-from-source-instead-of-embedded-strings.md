@@ -2,7 +2,7 @@
 
 **ID:** refactor-domus-init-to-install-template-files-from-source-instead-of-embedded-strings
 **Status:** done
-**Refinement:** autonomous
+**Autonomous:** true
 **Priority:** high
 **Captured:** 2026-03-16
 **Parent:** none

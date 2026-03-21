@@ -2,7 +2,7 @@
 
 **ID:** fix-skill-frontmatter-triggers-to-cover-agent-invocation-scenarios
 **Status:** done
-**Refinement:** proposed
+**Autonomous:** false
 **Priority:** high
 **Captured:** 2026-03-16
 **Parent:** none

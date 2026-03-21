@@ -2,8 +2,8 @@
 
 **ID:** worker-autonomy-and-execution-model-alignment
 **Status:** done
+**Autonomous:** true
 **Branch:** task/worker-autonomy-and-execution-model-alignment
-**Refinement:** autonomous
 **Priority:** high
 **Captured:** 2026-03-19
 **Parent:** align-execution-pipeline-with-adr-004005-design

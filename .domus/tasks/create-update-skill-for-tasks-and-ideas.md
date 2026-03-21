@@ -2,7 +2,7 @@
 
 **ID:** create-update-skill-for-tasks-and-ideas
 **Status:** deferred
-**Refinement:** raw
+**Autonomous:** false
 **Priority:** normal
 **Captured:** 2026-03-17
 **Parent:** none

@@ -3,8 +3,8 @@ import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { version } from "../package.json";
-import { stripRoot } from "./lib/root.ts";
 import { projectRoot } from "./lib/jsonl.ts";
+import { stripRoot } from "./lib/root.ts";
 
 function runCli(...args: string[]) {
   return Bun.spawnSync(["bun", "run", "src/cli.ts", ...args], {
@@ -83,10 +83,15 @@ test("stripRoot: expands tilde in path", async () => {
 test("stripRoot: exits with code 1 when --root path does not exist", () => {
   let exitCode: number | null = null;
   const origExit = process.exit;
-  process.exit = ((code: number) => { exitCode = code; throw new Error("process.exit"); }) as never;
+  process.exit = ((code: number) => {
+    exitCode = code;
+    throw new Error("process.exit");
+  }) as never;
   try {
     stripRoot(["--root", "/does/not/exist/at/all", "task", "list"]);
-  } catch { /* expected */ } finally {
+  } catch {
+    /* expected */
+  } finally {
     process.exit = origExit;
   }
   expect(exitCode).toBe(1);
@@ -95,10 +100,15 @@ test("stripRoot: exits with code 1 when --root path does not exist", () => {
 test("stripRoot: exits with code 1 when --root has no argument", () => {
   let exitCode: number | null = null;
   const origExit = process.exit;
-  process.exit = ((code: number) => { exitCode = code; throw new Error("process.exit"); }) as never;
+  process.exit = ((code: number) => {
+    exitCode = code;
+    throw new Error("process.exit");
+  }) as never;
   try {
     stripRoot(["--root"]);
-  } catch { /* expected */ } finally {
+  } catch {
+    /* expected */
+  } finally {
     process.exit = origExit;
   }
   expect(exitCode).toBe(1);
@@ -110,14 +120,14 @@ let savedDomusRoot: string | undefined;
 
 beforeEach(() => {
   savedDomusRoot = process.env.DOMUS_ROOT;
-  delete process.env.DOMUS_ROOT;
+  process.env.DOMUS_ROOT = undefined;
 });
 
 afterEach(() => {
   if (savedDomusRoot !== undefined) {
     process.env.DOMUS_ROOT = savedDomusRoot;
   } else {
-    delete process.env.DOMUS_ROOT;
+    process.env.DOMUS_ROOT = undefined;
   }
 });
 

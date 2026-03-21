@@ -8,50 +8,50 @@ Always check the existing task list before creating a new task. Run `domus task 
 
 Task markdown files have two distinct parts — use the right tool for each:
 
-- **Metadata fields** (frontmatter: status, refinement, priority, depends-on, etc.) — always update via `domus task update <id> --field value`. This keeps `tasks.jsonl` in sync. Direct file edits to frontmatter will silently diverge from the index and break `domus task overview` and other commands.
-- **Status** is a separate subcommand: `domus task status <id> <value>`
+- **Metadata fields** (frontmatter: status, autonomous, priority, depends-on, etc.) — always update via `domus task update <id> --field value`. This keeps `tasks.jsonl` in sync. Direct file edits to frontmatter will silently diverge from the index and break `domus task overview` and other commands.
+- **Status transitions** — use `domus task advance <id>` for normal forward progression. Use `domus task cancel`, `domus task defer`, `domus task reopen` for escape hatches. `domus task status` is a Doctor power tool only.
 - **Body content** (description, acceptance criteria, implementation notes) — edit the markdown file directly with Write/Edit tools. The CLI has no flags for body content.
 
-## Task refinement lifecycle
+## Task status lifecycle
 
-`raw → proposed → refined → autonomous`
+```
+raw → proposed → ready → in-progress → done
+```
 
-- **raw** — just captured, no refinement done (`~`)
-- **proposed** — Claude has done a refinement pass (criteria written, shape clear) but the human hasn't reviewed yet (`◐`)
-- **refined** — human has reviewed and confirmed (`◎`)
-- **autonomous** — ready for a worker to execute without human input (no icon)
+- **raw** (`○`) — just captured, needs refinement
+- **proposed** (`◐`) — Claude has done a refinement pass (criteria written, shape clear) but the human hasn't reviewed yet
+- **ready** (`◎`) — human approved, waiting for dispatch
+- **in-progress** (`◑`) — being worked on
+- **done** (`●`) — complete
 
-Only `autonomous` tasks appear in the Autonomous section of `domus task overview`. All others appear in Supervised.
+Escape hatches from any state: `cancelled` (`✕`), `deferred` (`⏸`). Re-entry: `reopen` returns to `raw`.
 
-## Task status values
+`ready-for-senior-review` (`⊙`) exists in the state engine but is skipped by `advance` in v0.0. Known v0.1 addition.
 
-`open` → `in-progress` → `ready-for-senior-review` → `done` | `cancelled` | `deferred`
+### The `autonomous` flag
 
-`cancelled` and `deferred` are valid escape hatches from any state. Invalid transitions are rejected with an error.
+Boolean on each task, always present in frontmatter (`**Autonomous:** true` or `**Autonomous:** false`). Controls whether the task can be dispatched to a Worker for autonomous execution. Set via `domus task update <id> --autonomous` or `--no-autonomous`.
 
-Update via: `domus task status <id> <value>`
+### CLI commands for status transitions
 
-**CLI output icon reference** — icons used in `domus task list` and `domus task overview`:
+- `domus task advance <id>` — primary forward transition. The state engine decides the next status.
+- `domus task cancel <id> [--note <text>]` — cancel from any active state
+- `domus task defer <id> [--note <text>]` — defer from any active state
+- `domus task reopen <id>` — reopen cancelled/deferred → raw
+- `domus task status <id> <value>` — Doctor power tool only, not for normal workflow
 
-| Icon | Meaning |
-|------|---------|
-| `○` | open |
-| `◑` | in-progress |
-| `◎` | ready-for-senior-review |
-| `●` | done |
-| `✕` | cancelled |
-| `⏸` | deferred |
-| `⊘` | blocked |
-| `▲` | high priority |
-| `·` | normal priority |
-| `▼` | low priority |
-| `~` | raw refinement |
-| `◐` | proposed refinement |
-| `◎` | refined |
+## Task overview grouping
+
+Overview groups tasks by status in this order:
+1. **Ready** — can be dispatched
+2. **In Progress** — currently being worked on
+3. **Proposed** — needs human review
+4. **Raw** — needs refinement
+5. **Blocked** — unmet dependencies
 
 **`task add` and `task update` flags must mirror each other.** When a flag is added to one command, add it to the other in the same commit.
 
-**Superseded tasks must be cancelled immediately.** If a task is superseded by another piece of work, cancel it (`domus task status <id> cancelled`) at the same time as writing any outcome note. A superseded note without a status change leaves the task misleadingly open.
+**Superseded tasks must be cancelled immediately.** If a task is superseded by another piece of work, cancel it (`domus task cancel <id> --note "reason"`) at the same time as writing any outcome note.
 
 ## Ideas vs tasks
 

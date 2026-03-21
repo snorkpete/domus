@@ -1,9 +1,9 @@
 # Task: Add domus CLI and store permissions to domus init
 
 **Status:** done
+**Autonomous:** true
 **ID:** add-domus-cli-and-store-permissions-to-domus-init
 **Status:** in-progress
-**Refinement:** autonomous
 **Priority:** normal
 **Captured:** 2026-03-14
 **Parent:** none

@@ -31,6 +31,8 @@ export function validateEnum<T extends string>(
   label: string,
 ): T {
   if (valid.includes(value as T)) return value as T;
-  console.error(`Invalid ${label}: ${value}. Must be one of: ${valid.join(", ")}`);
+  console.error(
+    `Invalid ${label}: ${value}. Must be one of: ${valid.join(", ")}`,
+  );
   process.exit(1);
 }

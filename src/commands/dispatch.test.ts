@@ -26,7 +26,12 @@ function trapExit(): { didExit: () => boolean; restore: () => void } {
     _exited = true;
     throw new Error("process.exit");
   }) as never;
-  return { didExit: () => _exited, restore: () => { process.exit = orig; } };
+  return {
+    didExit: () => _exited,
+    restore: () => {
+      process.exit = orig;
+    },
+  };
 }
 
 function captureOutput(): { lines: () => string[]; restore: () => void } {
@@ -37,7 +42,10 @@ function captureOutput(): { lines: () => string[]; restore: () => void } {
   console.error = (...args: unknown[]) => _lines.push(args.join(" "));
   return {
     lines: () => _lines,
-    restore: () => { console.log = origLog; console.error = origErr; },
+    restore: () => {
+      console.log = origLog;
+      console.error = origErr;
+    },
   };
 }
 
@@ -45,7 +53,9 @@ test("dispatch: exits with no args", async () => {
   const trap = trapExit();
   try {
     await runDispatch([]);
-  } catch { /* expected */ } finally {
+  } catch {
+    /* expected */
+  } finally {
     trap.restore();
   }
   expect(trap.didExit()).toBe(true);
@@ -55,19 +65,26 @@ test("dispatch: exits if task not found", async () => {
   const trap = trapExit();
   try {
     await runDispatch(["no-such-task"]);
-  } catch { /* expected */ } finally {
+  } catch {
+    /* expected */
+  } finally {
     trap.restore();
   }
   expect(trap.didExit()).toBe(true);
 });
 
 test("dispatch: exits if task is not autonomous", async () => {
-  await runTask(["add", "--title", "Manual Task", "--refinement", "refined"]);
+  // Create a task and advance to ready without autonomous flag
+  await runTask(["add", "--title", "Manual Task"]);
+  await runTask(["advance", "manual-task"]); // raw → proposed
+  await runTask(["advance", "manual-task"]); // proposed → ready
   const trap = trapExit();
   const out = captureOutput();
   try {
     await runDispatch(["manual-task"]);
-  } catch { /* expected */ } finally {
+  } catch {
+    /* expected */
+  } finally {
     trap.restore();
     out.restore();
   }
@@ -75,14 +92,15 @@ test("dispatch: exits if task is not autonomous", async () => {
   expect(out.lines().join("\n")).toContain("not autonomous");
 });
 
-test("dispatch: exits if task is done", async () => {
-  await runTask(["add", "--title", "My Task", "--refinement", "autonomous"]);
-  await runTask(["status", "my-task", "done"]);
+test("dispatch: exits if task is not ready", async () => {
+  await runTask(["add", "--title", "My Task", "--autonomous"]);
   const trap = trapExit();
   const out = captureOutput();
   try {
     await runDispatch(["my-task"]);
-  } catch { /* expected */ } finally {
+  } catch {
+    /* expected */
+  } finally {
     trap.restore();
     out.restore();
   }
@@ -90,8 +108,10 @@ test("dispatch: exits if task is done", async () => {
   expect(out.lines().join("\n")).toContain("not dispatchable");
 });
 
-test("dispatch: starts an open autonomous task", async () => {
-  await runTask(["add", "--title", "My Task", "--refinement", "autonomous"]);
+test("dispatch: starts a ready autonomous task", async () => {
+  await runTask(["add", "--title", "My Task", "--autonomous"]);
+  await runTask(["advance", "my-task"]); // raw → proposed
+  await runTask(["advance", "my-task"]); // proposed → ready
   const out = captureOutput();
   try {
     await runDispatch(["my-task"]);
@@ -100,20 +120,5 @@ test("dispatch: starts an open autonomous task", async () => {
   }
   const output = out.lines().join("\n");
   expect(output).toContain("Starting task my-task");
-  expect(output).toContain("ready for dispatch");
-});
-
-test("dispatch: resumes an in-progress autonomous task without restarting", async () => {
-  await runTask(["add", "--title", "My Task", "--refinement", "autonomous"]);
-  await runTask(["start", "my-task", "--branch", "task/my-task"]);
-  const out = captureOutput();
-  try {
-    await runDispatch(["my-task"]);
-  } finally {
-    out.restore();
-  }
-  const output = out.lines().join("\n");
-  expect(output).toContain("already in-progress");
-  expect(output).toContain("resuming");
   expect(output).toContain("ready for dispatch");
 });

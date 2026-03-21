@@ -2,7 +2,7 @@
 
 **ID:** execution-engine-and-progress-mobility-implementation
 **Status:** done
-**Refinement:** autonomous
+**Autonomous:** true
 **Priority:** high
 **Captured:** 2026-03-19
 **Parent:** align-execution-pipeline-with-adr-004005-design

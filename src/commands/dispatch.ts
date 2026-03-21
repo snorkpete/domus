@@ -2,9 +2,6 @@ import { projectRoot } from "../lib/jsonl.ts";
 import { readTasks } from "../lib/task-store.ts";
 import { runTask } from "./task.ts";
 
-// Statuses that can be dispatched
-const DISPATCHABLE_STATUSES = new Set(["open", "in-progress"]);
-
 export async function runDispatch(args: string[]): Promise<void> {
   const taskId = args[0];
   if (!taskId || taskId.startsWith("-")) {
@@ -21,33 +18,31 @@ export async function runDispatch(args: string[]): Promise<void> {
     process.exit(1);
   }
 
-  // Must be dispatchable: open/in-progress, and autonomous refinement
-  if (!DISPATCHABLE_STATUSES.has(task.status)) {
+  // Must be ready status
+  if (task.status !== "ready") {
     console.error(
-      `Task ${taskId} is not dispatchable (status: ${task.status}). Must be open or in-progress.`,
+      `Task ${taskId} is not dispatchable (status: ${task.status}). Must be ready.`,
     );
     process.exit(1);
   }
 
-  if (task.refinement !== "autonomous") {
+  // Must be autonomous
+  if (!task.autonomous) {
     console.error(
-      `Task ${taskId} is not autonomous (refinement: ${task.refinement}). Only autonomous tasks can be dispatched.`,
+      `Task ${taskId} is not autonomous. Only autonomous tasks can be dispatched.`,
     );
     process.exit(1);
   }
 
-  if (task.status === "open") {
-    // Derive branch name from task id
+  if (task.status === "ready") {
     const branch = `task/${taskId}`;
     console.log(`Starting task ${taskId} on branch ${branch}...`);
     await runTask(["start", taskId, "--branch", branch]);
-  } else {
-    // Already in-progress — resume case, skip start
-    console.log(`Task ${taskId} is already in-progress, resuming...`);
-    console.log(`  Branch: ${task.branch ?? "(none recorded)"}`);
   }
 
   console.log();
   console.log(`Task ${taskId} is ready for dispatch.`);
-  console.log(`Hand off to Claude with the worker persona and the task execution log.`);
+  console.log(
+    "Hand off to Claude with the worker role and the task execution log.",
+  );
 }

@@ -1,8 +1,8 @@
 # Task: Get domus ready for prod / new machine setup
 
 **ID:** get-domus-ready-for-prod-new-machine-setup
-**Status:** open
-**Refinement:** autonomous
+**Status:** ready
+**Autonomous:** true
 **Priority:** high
 **Captured:** 2026-03-14
 **Parent:** none

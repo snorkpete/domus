@@ -2,7 +2,7 @@
 
 **ID:** show-dependency-chains-in-blocked-section-of-task-overview
 **Status:** deferred
-**Refinement:** raw
+**Autonomous:** false
 **Priority:** normal
 **Captured:** 2026-03-17
 **Parent:** none

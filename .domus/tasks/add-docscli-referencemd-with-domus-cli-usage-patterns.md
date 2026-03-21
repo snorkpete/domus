@@ -2,7 +2,7 @@
 
 **ID:** add-docscli-referencemd-with-domus-cli-usage-patterns
 **Status:** done
-**Refinement:** proposed
+**Autonomous:** false
 **Priority:** high
 **Captured:** 2026-03-16
 **Parent:** none

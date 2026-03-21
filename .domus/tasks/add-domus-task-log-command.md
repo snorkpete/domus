@@ -2,7 +2,7 @@
 
 **ID:** add-domus-task-log-command
 **Status:** done
-**Refinement:** autonomous
+**Autonomous:** true
 **Priority:** high
 **Captured:** 2026-03-15
 **Parent:** execution-engine-and-progress-mobility-implementation

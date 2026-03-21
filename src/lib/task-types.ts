@@ -1,7 +1,14 @@
 // ── Types ────────────────────────────────────────────────────────────────────
 
-export type TaskStatus = "open" | "in-progress" | "ready-for-senior-review" | "done" | "cancelled" | "deferred";
-export type TaskRefinement = "raw" | "proposed" | "refined" | "autonomous";
+export type TaskStatus =
+  | "raw"
+  | "proposed"
+  | "ready"
+  | "in-progress"
+  | "ready-for-senior-review"
+  | "done"
+  | "cancelled"
+  | "deferred";
 export type TaskPriority = "high" | "normal" | "low";
 
 export type TaskEntry = {
@@ -10,7 +17,7 @@ export type TaskEntry = {
   file: string;
   date_captured: string;
   status: TaskStatus;
-  refinement: TaskRefinement;
+  autonomous: boolean;
   priority: TaskPriority;
   parent_id: string | null;
   depends_on: string[];
@@ -27,6 +34,14 @@ export type TaskEntry = {
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
-export const VALID_STATUSES: TaskStatus[] = ["open", "in-progress", "ready-for-senior-review", "done", "cancelled", "deferred"];
-export const VALID_REFINEMENTS: TaskRefinement[] = ["raw", "proposed", "refined", "autonomous"];
+export const VALID_STATUSES: TaskStatus[] = [
+  "raw",
+  "proposed",
+  "ready",
+  "in-progress",
+  "ready-for-senior-review",
+  "done",
+  "cancelled",
+  "deferred",
+];
 export const VALID_PRIORITIES: TaskPriority[] = ["high", "normal", "low"];

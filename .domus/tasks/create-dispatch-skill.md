@@ -1,8 +1,8 @@
 # Task: Create dispatch skill
 
 **ID:** create-dispatch-skill
-**Status:** open
-**Refinement:** raw
+**Status:** raw
+**Autonomous:** false
 **Priority:** high
 **Captured:** 2026-03-17
 **Parent:** none

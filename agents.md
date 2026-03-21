@@ -2,7 +2,7 @@
 
 ## What is this project?
 
-Domus is a per-project workflow tool — a `.domus/` directory committed alongside the code that gives Claude structured context: ideas, tasks, and (eventually) specs. It integrates with Claude via CLAUDE.md and skills to support both interactive persona sessions and autonomous background work.
+Domus is a per-project workflow tool. It is three things: a `.domus/` directory (the store), the `domus` CLI (manages the store), and roles/skills/context files (guide Claude). It integrates with Claude Code via CLAUDE.md, skills, and role files to support both interactive sessions and autonomous background execution.
 
 **Vision:** Domus removes the human from the *execution* path without removing them from the *decision* path. Context mobility — the ability for any session to pick up any task without explanation — is what makes autonomous execution possible. Read `decisions/000-vision.md` when scoping new features, evaluating whether a proposed change fits the system's purpose, or when the right direction feels unclear.
 
@@ -49,7 +49,7 @@ When running git commands in a directory other than the current working director
 
 Workers operate autonomously — they must not pause mid-task for permission prompts. `.claude/settings.json` pre-approves the standard tool set (git, bun, file operations). Workers should proceed without requesting additional permissions for any command within that set.
 
-If a task genuinely requires a tool outside the pre-approved set, note it in `WORKER_NOTES.md` at the repo root rather than prompting — the human will handle it on the next pass.
+If a task genuinely requires a tool outside the pre-approved set, log it via `domus task log <id> "Blocked: <description>"` rather than prompting — the human will handle it on the next pass.
 
 ## Conventions
 
@@ -57,7 +57,7 @@ If a task genuinely requires a tool outside the pre-approved set, note it in `WO
 - Tests are co-located with source files (`*.test.ts`) and written first (TDD).
 - Prefer Bun's native APIs (`Bun.file`, `Bun.spawn`, `Bun.spawnSync`) over adding packages.
 - Targeted file edits over full rewrites — preserve context, don't regenerate.
-- Aim for a single commit per ticket. If changes naturally require multiple commits, that is a signal the ticket may be too large — note it in `WORKER_NOTES.md`.
+- Aim for a single commit per task. If changes naturally require multiple commits, that is a signal the task may be too large — log it via `domus task log`.
 
 ## Architectural decisions
 

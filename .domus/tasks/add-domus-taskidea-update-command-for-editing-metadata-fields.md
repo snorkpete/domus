@@ -2,7 +2,7 @@
 
 **ID:** add-domus-taskidea-update-command-for-editing-metadata-fields
 **Status:** done
-**Refinement:** autonomous
+**Autonomous:** true
 **Priority:** normal
 **Captured:** 2026-03-14
 **Parent:** none

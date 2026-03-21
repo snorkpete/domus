@@ -2,7 +2,7 @@
 
 **ID:** add-blocked-section-to-domus-task-overview
 **Status:** done
-**Refinement:** autonomous
+**Autonomous:** true
 **Priority:** normal
 **Captured:** 2026-03-16
 **Parent:** none

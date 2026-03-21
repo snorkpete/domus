@@ -1,6 +1,10 @@
 import { join } from "node:path";
+import {
+  type IdeaEntry,
+  type IdeaStatus,
+  VALID_IDEA_STATUSES,
+} from "./idea-types.ts";
 import { DOMUS_DIR, readJsonl, writeJsonl } from "./jsonl.ts";
-import { type IdeaEntry, type IdeaStatus, VALID_IDEA_STATUSES } from "./idea-types.ts";
 
 export type { IdeaEntry, IdeaStatus };
 export { VALID_IDEA_STATUSES };
@@ -21,6 +25,9 @@ export async function readIdeas(root: string): Promise<IdeaEntry[]> {
   return readJsonl<IdeaEntry>(ideasJsonlPath(root));
 }
 
-export async function writeIdeas(root: string, ideas: IdeaEntry[]): Promise<void> {
+export async function writeIdeas(
+  root: string,
+  ideas: IdeaEntry[],
+): Promise<void> {
   return writeJsonl(ideasJsonlPath(root), ideasDir(root), ideas);
 }

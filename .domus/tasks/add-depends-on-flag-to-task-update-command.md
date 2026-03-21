@@ -2,7 +2,7 @@
 
 **ID:** add-depends-on-flag-to-task-update-command
 **Status:** cancelled
-**Refinement:** raw
+**Autonomous:** false
 **Priority:** normal
 **Captured:** 2026-03-14
 **Parent:** none

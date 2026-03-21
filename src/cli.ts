@@ -1,26 +1,20 @@
 #!/usr/bin/env bun
 import { version } from "../package.json";
-import { runAdd } from "./commands/add.ts";
 import { runDispatch } from "./commands/dispatch.ts";
 import { runIdea } from "./commands/idea.ts";
 import { runInit } from "./commands/init.ts";
 import { runTask } from "./commands/task.ts";
-import { runWork } from "./commands/work.ts";
 import { stripRoot } from "./lib/root.ts";
 
 export { stripRoot };
 
 const USAGE = `
-Domus — personal workflow and AI orchestration system
+Domus — per-project workflow tool
 
 Usage:
-  domus                          Connect to Butler session
-  domus work                     Connect to Butler session
-  domus connect                  Connect to Butler session
   domus idea                     Manage ideas (domus idea --help)
-  domus init                     Initialise a Domus workspace
-  domus add project <path>       Register a project
-  domus dispatch <ticket-file>   Dispatch a worker for a ticket
+  domus init                     Initialise a .domus/ directory
+  domus dispatch <task-id>       Dispatch a worker for a task
   domus task <subcommand>        Manage project tasks
 
 Global Options:
@@ -45,22 +39,12 @@ async function main() {
       console.log(USAGE);
       break;
 
-    case undefined:
-    case "work":
-    case "connect":
-      await runWork();
-      break;
-
     case "idea":
       await runIdea(args.slice(1));
       break;
 
     case "init":
       await runInit(args.slice(1));
-      break;
-
-    case "add":
-      await runAdd(args.slice(1));
       break;
 
     case "dispatch":
@@ -72,7 +56,8 @@ async function main() {
       break;
 
     default:
-      console.error(`Unknown command: ${command}`);
+      console.error(`Unknown command: ${command ?? "(none)"}`);
+      console.log(USAGE);
       process.exit(1);
   }
 }

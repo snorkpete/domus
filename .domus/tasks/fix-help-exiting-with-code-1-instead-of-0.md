@@ -2,7 +2,7 @@
 
 **ID:** fix-help-exiting-with-code-1-instead-of-0
 **Status:** done
-**Refinement:** raw
+**Autonomous:** false
 **Priority:** normal
 **Captured:** 2026-03-14
 **Parent:** none

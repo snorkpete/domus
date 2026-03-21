@@ -2,7 +2,7 @@
 
 **ID:** add-depends-on-support-to-domus-task-update
 **Status:** cancelled
-**Refinement:** raw
+**Autonomous:** false
 **Priority:** normal
 **Captured:** 2026-03-15
 **Parent:** none

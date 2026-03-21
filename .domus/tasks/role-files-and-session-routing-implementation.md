@@ -2,8 +2,8 @@
 
 **ID:** role-files-and-session-routing-implementation
 **Status:** done
+**Autonomous:** true
 **Branch:** task/role-files-and-session-routing-implementation
-**Refinement:** autonomous
 **Priority:** high
 **Captured:** 2026-03-19
 **Parent:** align-execution-pipeline-with-adr-004005-design

@@ -2,7 +2,7 @@
 
 **ID:** add-truncation-indicator-to-domus-task-watch-when-output-exceeds-terminal-height
 **Status:** deferred
-**Refinement:** raw
+**Autonomous:** false
 **Priority:** normal
 **Captured:** 2026-03-16
 **Parent:** none

@@ -2,7 +2,7 @@
 
 **ID:** fix-temp-directory-leak-in-ticketstestts-on-test-failure
 **Status:** done
-**Refinement:** autonomous
+**Autonomous:** true
 **Priority:** low
 **Captured:** 2026-03-14
 **Parent:** none

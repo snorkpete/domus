@@ -2,7 +2,7 @@
 
 **ID:** fix-worker-isprocessrunning-receives-worktreepath-instead-of-pid
 **Status:** cancelled
-**Refinement:** raw
+**Autonomous:** false
 **Priority:** normal
 **Captured:** 2026-03-14
 **Parent:** none

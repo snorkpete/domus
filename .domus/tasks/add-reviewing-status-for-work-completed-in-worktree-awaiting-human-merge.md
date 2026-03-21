@@ -2,7 +2,7 @@
 
 **ID:** add-reviewing-status-for-work-completed-in-worktree-awaiting-human-merge
 **Status:** cancelled
-**Refinement:** raw
+**Autonomous:** false
 **Priority:** normal
 **Captured:** 2026-03-16
 **Parent:** none

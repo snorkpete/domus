@@ -1,8 +1,8 @@
 # Task: Enforce task closure as part of worker lifecycle
 
 **ID:** enforce-task-closure-as-part-of-worker-lifecycle
-**Status:** open
-**Refinement:** raw
+**Status:** raw
+**Autonomous:** false
 **Priority:** high
 **Captured:** 2026-03-18
 **Parent:** none

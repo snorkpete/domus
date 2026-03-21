@@ -2,7 +2,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { join, resolve } from "node:path";
 
-// ── Workspace helpers ─────────────────────────────────────────────────────────
+// ── Project helpers ──────────────────────────────────────────────────────────
 
 export function today(): string {
   return new Date().toISOString().slice(0, 10);
@@ -32,7 +32,7 @@ export function readDomusConfigSync(baseDir: string): DomusConfig | null {
 
 /**
  * Resolve the domus project root directory:
- * 1. DOMUS_ROOT env var (set by dispatch for workers)
+ * 1. --root flag (extracted in cli.ts, passed via DOMUS_ROOT internal env var)
  * 2. `root` field from .domus/config.json in cwd
  * 3. Fallback: resolve(cwd)
  */
@@ -70,7 +70,7 @@ export async function writeJsonl<T>(
 ): Promise<void> {
   await mkdir(dir, { recursive: true });
   const content = items.map((i) => JSON.stringify(i)).join("\n");
-  await writeFile(jsonlPath, content.length > 0 ? content + "\n" : "", "utf-8");
+  await writeFile(jsonlPath, content.length > 0 ? `${content}\n` : "", "utf-8");
 }
 
 // ── Markdown helpers ──────────────────────────────────────────────────────────

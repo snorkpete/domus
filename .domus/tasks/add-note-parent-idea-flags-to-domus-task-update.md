@@ -2,7 +2,7 @@
 
 **ID:** add-note-parent-idea-flags-to-domus-task-update
 **Status:** done
-**Refinement:** autonomous
+**Autonomous:** true
 **Priority:** normal
 **Captured:** 2026-03-15
 **Parent:** none

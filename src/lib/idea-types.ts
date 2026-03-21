@@ -23,4 +23,11 @@ export type IdeaEntry = {
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
-export const VALID_IDEA_STATUSES: IdeaStatus[] = ["raw", "refined", "scoped", "implemented", "abandoned", "deferred"];
+export const VALID_IDEA_STATUSES: IdeaStatus[] = [
+  "raw",
+  "refined",
+  "scoped",
+  "implemented",
+  "abandoned",
+  "deferred",
+];

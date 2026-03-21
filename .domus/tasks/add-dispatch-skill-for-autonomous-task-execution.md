@@ -2,7 +2,7 @@
 
 **ID:** add-dispatch-skill-for-autonomous-task-execution
 **Status:** cancelled
-**Refinement:** raw
+**Autonomous:** false
 **Priority:** normal
 **Captured:** 2026-03-15
 **Parent:** none

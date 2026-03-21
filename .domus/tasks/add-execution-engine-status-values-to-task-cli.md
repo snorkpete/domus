@@ -2,7 +2,7 @@
 
 **ID:** add-execution-engine-status-values-to-task-cli
 **Status:** done
-**Refinement:** autonomous
+**Autonomous:** true
 **Priority:** high
 **Captured:** 2026-03-17
 **Parent:** execution-engine-and-progress-mobility-implementation

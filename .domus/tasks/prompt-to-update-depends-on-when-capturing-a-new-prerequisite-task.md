@@ -1,8 +1,8 @@
 # Task: Prompt to update depends-on when capturing a new prerequisite task
 
 **ID:** prompt-to-update-depends-on-when-capturing-a-new-prerequisite-task
-**Status:** open
-**Refinement:** raw
+**Status:** raw
+**Autonomous:** false
 **Priority:** high
 **Captured:** 2026-03-18
 **Parent:** none

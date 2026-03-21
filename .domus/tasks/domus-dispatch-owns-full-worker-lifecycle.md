@@ -2,7 +2,7 @@
 
 **ID:** domus-dispatch-owns-full-worker-lifecycle
 **Status:** cancelled
-**Refinement:** raw
+**Autonomous:** false
 **Priority:** high
 **Captured:** 2026-03-15
 **Parent:** none

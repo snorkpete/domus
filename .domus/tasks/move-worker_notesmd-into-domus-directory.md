@@ -2,7 +2,7 @@
 
 **ID:** move-worker_notesmd-into-domus-directory
 **Status:** cancelled
-**Refinement:** raw
+**Autonomous:** false
 **Priority:** normal
 **Captured:** 2026-03-15
 **Parent:** none

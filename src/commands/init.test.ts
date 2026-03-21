@@ -21,7 +21,6 @@ test("creates .domus/ directory structure", async () => {
   for (const dir of [
     ".domus/ideas",
     ".domus/tasks",
-    ".domus/specs",
     ".domus/tags",
     ".domus/reference",
   ]) {

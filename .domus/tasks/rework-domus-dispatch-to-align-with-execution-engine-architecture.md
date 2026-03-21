@@ -2,7 +2,7 @@
 
 **ID:** rework-domus-dispatch-to-align-with-execution-engine-architecture
 **Status:** done
-**Refinement:** autonomous
+**Autonomous:** true
 **Priority:** high
 **Captured:** 2026-03-16
 **Parent:** execution-engine-and-progress-mobility-implementation

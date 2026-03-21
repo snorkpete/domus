@@ -1,8 +1,13 @@
 import { existsSync } from "node:fs";
 import { readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
-import { parseFlag, hasFlag, toKebabCase, uniqueId, validateEnum } from "../lib/args.ts";
-import { today, projectRoot, DOMUS_DIR, updateMarkdownStatus } from "../lib/jsonl.ts";
+import {
+  hasFlag,
+  parseFlag,
+  toKebabCase,
+  uniqueId,
+  validateEnum,
+} from "../lib/args.ts";
 import {
   type IdeaEntry,
   type IdeaStatus,
@@ -10,15 +15,21 @@ import {
   readIdeas,
   writeIdeas,
 } from "../lib/idea-store.ts";
+import {
+  DOMUS_DIR,
+  projectRoot,
+  today,
+  updateMarkdownStatus,
+} from "../lib/jsonl.ts";
 import { updateMarkdownTitle, updateSection } from "../lib/markdown.ts";
-import { cmdRefine } from "./idea-refine.ts";
-
 // ── Subcommands ──────────────────────────────────────────────────────────────
 
 async function cmdAdd(args: string[]): Promise<void> {
   if (hasFlag(args, "--help") || hasFlag(args, "-h")) {
     console.log("Usage: domus idea add --title <title> [options]");
-    console.log("Options: --summary <text> --tags <tag1,tag2> --status <status>");
+    console.log(
+      "Options: --summary <text> --tags <tag1,tag2> --status <status>",
+    );
     return;
   }
 
@@ -38,7 +49,11 @@ async function cmdAdd(args: string[]): Promise<void> {
       ?.split(",")
       .map((t) => t.trim())
       .filter(Boolean) ?? [];
-  const status = validateEnum(parseFlag(args, "--status") ?? "raw", VALID_IDEA_STATUSES, "status");
+  const status = validateEnum(
+    parseFlag(args, "--status") ?? "raw",
+    VALID_IDEA_STATUSES,
+    "status",
+  );
 
   const ideas = await readIdeas(root);
   const existingIds = ideas.map((i) => i.id);
@@ -94,7 +109,9 @@ _To be filled in._
 
 async function cmdStatus(args: string[]): Promise<void> {
   if (hasFlag(args, "--help") || hasFlag(args, "-h")) {
-    console.log("Usage: domus idea status <id> <raw|refined|scoped|implemented|abandoned|deferred> [--outcome <text>]");
+    console.log(
+      "Usage: domus idea status <id> <raw|refined|scoped|implemented|abandoned|deferred> [--outcome <text>]",
+    );
     return;
   }
 
@@ -118,7 +135,9 @@ async function cmdStatus(args: string[]): Promise<void> {
   const requiresOutcome = ["abandoned", "deferred"];
   const outcomeNote = parseFlag(args, "--outcome") ?? null;
   if (requiresOutcome.includes(newStatus) && !outcomeNote) {
-    console.error(`--outcome is required when setting status to "${newStatus}"`);
+    console.error(
+      `--outcome is required when setting status to "${newStatus}"`,
+    );
     process.exit(1);
   }
 
@@ -201,8 +220,7 @@ async function cmdOverview(args: string[]): Promise<void> {
     const refined = filtered.filter((i) => i.status === "refined");
     const scoped = filtered.filter((i) => i.status === "scoped");
 
-    const fmt = (i: IdeaEntry) =>
-      `  ${i.id}\n    ${i.summary || i.title}`;
+    const fmt = (i: IdeaEntry) => `  ${i.id}\n    ${i.summary || i.title}`;
 
     if (raw.length > 0) {
       console.log("## Needs Refinement (raw)\n");
@@ -288,15 +306,20 @@ async function cmdShow(args: string[]): Promise<void> {
   console.log(`ID:        ${idea.id}`);
   console.log(`Status:    ${idea.status}`);
   console.log(`Captured:  ${idea.date_captured ?? "unknown"}`);
-  console.log(`Tags:      ${idea.tags.length > 0 ? idea.tags.join(", ") : "none"}`);
+  console.log(
+    `Tags:      ${idea.tags.length > 0 ? idea.tags.join(", ") : "none"}`,
+  );
   console.log(`Summary:   ${idea.summary || "(none)"}`);
   if (idea.outcome_note) console.log(`Outcome:   ${idea.outcome_note}`);
-  if (idea.date_implemented) console.log(`Implemented: ${idea.date_implemented}`);
+  if (idea.date_implemented)
+    console.log(`Implemented: ${idea.date_implemented}`);
 }
 
 async function cmdUpdate(args: string[]): Promise<void> {
   if (hasFlag(args, "--help") || hasFlag(args, "-h")) {
-    console.log("Usage: domus idea update <id> [--title <title>] [--summary <text>] [--tags <tag1,tag2>]");
+    console.log(
+      "Usage: domus idea update <id> [--title <title>] [--summary <text>] [--tags <tag1,tag2>]",
+    );
     return;
   }
 
@@ -304,7 +327,9 @@ async function cmdUpdate(args: string[]): Promise<void> {
   const [id] = args;
 
   if (!id) {
-    console.error("Usage: domus idea update <id> [--title <title>] [--summary <text>] [--tags <tag1,tag2>]");
+    console.error(
+      "Usage: domus idea update <id> [--title <title>] [--summary <text>] [--tags <tag1,tag2>]",
+    );
     process.exit(1);
   }
 
@@ -318,7 +343,10 @@ async function cmdUpdate(args: string[]): Promise<void> {
 
   const newTitle = parseFlag(args, "--title");
   const newSummary = parseFlag(args, "--summary");
-  const newTags = parseFlag(args, "--tags")?.split(",").map((t) => t.trim()).filter(Boolean);
+  const newTags = parseFlag(args, "--tags")
+    ?.split(",")
+    .map((t) => t.trim())
+    .filter(Boolean);
 
   if (!newTitle && !newSummary && !newTags) {
     console.error("Nothing to update. Provide at least one flag.");
@@ -354,8 +382,6 @@ Usage:
   domus idea show <id>
   domus idea overview [--filter <filter>]
   domus idea list [--status <status>] [--json]
-  domus idea refine [--context <text>]
-
 Subcommands:
   add       Create a new idea (writes to .domus/ideas/)
   status    Update idea status
@@ -363,7 +389,6 @@ Subcommands:
   show      Print full detail for a single idea
   overview  Show active ideas grouped by status (default filter: active)
   list      List all ideas (flat, --json for machine-readable output)
-  refine    Launch Oracle ideation session
 
 Filters for overview:
   active (default), raw, refined, scoped, implemented, parked, all
@@ -390,9 +415,6 @@ export async function runIdea(args: string[] = []): Promise<void> {
       break;
     case "list":
       await cmdList(args.slice(1));
-      break;
-    case "refine":
-      await cmdRefine(args.slice(1));
       break;
     case "--help":
     case "-h":

@@ -1,28 +1,95 @@
 import { existsSync } from "node:fs";
 import { appendFile, mkdir, readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
-import { parseFlag, hasFlag, toKebabCase, uniqueId, validateEnum } from "../lib/args.ts";
-import { today, projectRoot, DOMUS_DIR, updateMarkdownStatus } from "../lib/jsonl.ts";
+import {
+  hasFlag,
+  parseFlag,
+  toKebabCase,
+  uniqueId,
+  validateEnum,
+} from "../lib/args.ts";
+import {
+  DOMUS_DIR,
+  projectRoot,
+  today,
+  updateMarkdownStatus,
+} from "../lib/jsonl.ts";
+import {
+  updateBoldField,
+  updateMarkdownTitle,
+  updateSection,
+} from "../lib/markdown.ts";
 import {
   type TaskEntry,
   type TaskStatus,
-  VALID_STATUSES,
-  VALID_REFINEMENTS,
   VALID_PRIORITIES,
+  VALID_STATUSES,
+  VALID_TRANSITIONS,
+  doneIds,
+  isBlocked,
+  isReady,
+  isValidTransition,
+  nextStatus,
   readTasks,
   writeTasks,
-  doneIds,
-  isReady,
-  isBlocked,
 } from "../lib/task-store.ts";
-import { updateBoldField, updateMarkdownTitle, updateSection } from "../lib/markdown.ts";
 import {
   ansi,
-  sectionHeader,
-  formatRow,
-  formatAutonomousRow,
   formatBlockedTree,
+  formatRow,
+  sectionHeader,
 } from "./task-display.ts";
+
+// ── Shared helpers ───────────────────────────────────────────────────────────
+
+async function transitionTask(
+  root: string,
+  tasks: TaskEntry[],
+  task: TaskEntry,
+  newStatus: TaskStatus,
+  opts: { outcomeNote?: string | null; branch?: string | null } = {},
+): Promise<void> {
+  const oldStatus = task.status;
+  task.status = newStatus;
+  task.date_status_changed = today();
+
+  if (newStatus === "done") task.date_done = today();
+  if (newStatus === "ready" && task.autonomous === undefined)
+    task.autonomous = true;
+  if (opts.outcomeNote !== undefined) task.outcome_note = opts.outcomeNote;
+  if (opts.branch !== undefined) task.branch = opts.branch;
+
+  await writeTasks(root, tasks);
+  await updateMarkdownStatus(join(root, task.file), newStatus);
+  console.log(`Task ${task.id}: ${oldStatus} → ${newStatus}`);
+
+  if (newStatus === "done" && task.parent_id) {
+    const siblings = tasks.filter((t) => t.parent_id === task.parent_id);
+    const allDone = siblings.every(
+      (t) => t.id === task.id || t.status === "done",
+    );
+    if (allDone) {
+      const parent = tasks.find((t) => t.id === task.parent_id);
+      const parentTitle = parent ? `"${parent.title}"` : task.parent_id;
+      console.log(
+        `\nAll subtasks of ${parentTitle} are now complete — should I mark the parent done?`,
+      );
+    }
+  }
+}
+
+async function findTask(
+  root: string,
+  id: string,
+): Promise<{ tasks: TaskEntry[]; task: TaskEntry }> {
+  const tasks = await readTasks(root);
+  const task = tasks.find((t) => t.id === id);
+  if (!task) {
+    console.error(`Task not found: ${id}`);
+    process.exit(1);
+  }
+  return { tasks, task };
+}
 
 // ── Subcommands ──────────────────────────────────────────────────────────────
 
@@ -32,9 +99,7 @@ async function cmdAdd(args: string[]): Promise<void> {
     console.log(
       "Options: --summary <text> --tags <tag1,tag2> --priority <high|normal|low>",
     );
-    console.log(
-      "         --refinement <raw|proposed|refined|autonomous> --parent <id> --depends-on <id1,id2>",
-    );
+    console.log("         --autonomous --parent <id> --depends-on <id1,id2>");
     console.log("         --idea <idea-id> --outcome <text> --note <text>");
     return;
   }
@@ -43,23 +108,21 @@ async function cmdAdd(args: string[]): Promise<void> {
   const title = parseFlag(args, "--title");
   if (!title) {
     console.error("Usage: domus task add --title <title> [options]");
-    console.error(
-      "Options: --summary <text> --tags <tag1,tag2> --priority <high|normal|low>",
-    );
-    console.error(
-      "         --refinement <raw|proposed|refined|autonomous> --parent <id> --depends-on <id1,id2>",
-    );
-    console.error("         --idea <idea-id> --outcome <text> --note <text>");
     process.exit(1);
   }
 
   const summary = parseFlag(args, "--summary") ?? "";
-  const tags = parseFlag(args, "--tags")
-    ?.split(",")
-    .map((t) => t.trim())
-    .filter(Boolean) ?? [];
-  const priority = validateEnum(parseFlag(args, "--priority") ?? "normal", VALID_PRIORITIES, "priority");
-  const refinement = validateEnum(parseFlag(args, "--refinement") ?? "raw", VALID_REFINEMENTS, "refinement");
+  const tags =
+    parseFlag(args, "--tags")
+      ?.split(",")
+      .map((t) => t.trim())
+      .filter(Boolean) ?? [];
+  const priority = validateEnum(
+    parseFlag(args, "--priority") ?? "normal",
+    VALID_PRIORITIES,
+    "priority",
+  );
+  const autonomous = hasFlag(args, "--autonomous");
   const parentId = parseFlag(args, "--parent") ?? null;
   const dependsOn =
     parseFlag(args, "--depends-on")
@@ -82,8 +145,8 @@ async function cmdAdd(args: string[]): Promise<void> {
     title,
     file,
     date_captured: dateToday,
-    status: "open",
-    refinement,
+    status: "raw",
+    autonomous,
     priority,
     parent_id: parentId,
     depends_on: dependsOn,
@@ -105,8 +168,8 @@ async function cmdAdd(args: string[]): Promise<void> {
   const detailContent = `# Task: ${title}
 
 **ID:** ${id}
-**Status:** open
-**Refinement:** ${refinement}
+**Status:** raw
+**Autonomous:** ${autonomous}
 **Priority:** ${priority}
 **Captured:** ${dateToday}
 **Parent:** ${parentId ?? "none"}
@@ -139,24 +202,133 @@ _Remove if empty._
   console.log(`  File:   ${file}`);
 }
 
-// ── Transition map ────────────────────────────────────────────────────────────
-// Maps each status to the set of statuses it can transition to.
-// `cancelled` and `deferred` are valid escape hatches from any state.
+// ── advance ──────────────────────────────────────────────────────────────────
 
-const ESCAPE_HATCHES: TaskStatus[] = ["cancelled", "deferred"];
+async function cmdAdvance(args: string[]): Promise<void> {
+  if (hasFlag(args, "--help") || hasFlag(args, "-h")) {
+    console.log("Usage: domus task advance <id> [--note <text>]");
+    return;
+  }
 
-const VALID_TRANSITIONS: Record<TaskStatus, TaskStatus[]> = {
-  open: ["in-progress", "done", ...ESCAPE_HATCHES],
-  "in-progress": ["ready-for-senior-review", "done", ...ESCAPE_HATCHES],
-  "ready-for-senior-review": ["done", "in-progress", ...ESCAPE_HATCHES],
-  done: [...ESCAPE_HATCHES],
-  cancelled: ["open"],
-  deferred: ["open"],
-};
+  const root = projectRoot();
+  const [id] = args;
+
+  if (!id || id.startsWith("-")) {
+    console.error("Usage: domus task advance <id> [--note <text>]");
+    process.exit(1);
+  }
+
+  const { tasks, task } = await findTask(root, id);
+  const next = nextStatus(task.status);
+
+  if (!next) {
+    console.error(
+      `Cannot advance task ${id}: no next status from ${task.status}`,
+    );
+    process.exit(1);
+  }
+
+  const note = parseFlag(args, "--note");
+  await transitionTask(root, tasks, task, next);
+
+  if (note) {
+    await logToExecutionLog(root, id, `Advanced to ${next}: ${note}`);
+  }
+}
+
+// ── cancel ───────────────────────────────────────────────────────────────────
+
+async function cmdCancel(args: string[]): Promise<void> {
+  if (hasFlag(args, "--help") || hasFlag(args, "-h")) {
+    console.log("Usage: domus task cancel <id> [--note <text>]");
+    return;
+  }
+
+  const root = projectRoot();
+  const [id] = args;
+
+  if (!id || id.startsWith("-")) {
+    console.error("Usage: domus task cancel <id> [--note <text>]");
+    process.exit(1);
+  }
+
+  const { tasks, task } = await findTask(root, id);
+
+  if (!isValidTransition(task.status, "cancelled")) {
+    console.error(
+      `Cannot cancel task ${id}: invalid transition from ${task.status}`,
+    );
+    process.exit(1);
+  }
+
+  const note = parseFlag(args, "--note") || null;
+  await transitionTask(root, tasks, task, "cancelled", { outcomeNote: note });
+}
+
+// ── defer ────────────────────────────────────────────────────────────────────
+
+async function cmdDefer(args: string[]): Promise<void> {
+  if (hasFlag(args, "--help") || hasFlag(args, "-h")) {
+    console.log("Usage: domus task defer <id> [--note <text>]");
+    return;
+  }
+
+  const root = projectRoot();
+  const [id] = args;
+
+  if (!id || id.startsWith("-")) {
+    console.error("Usage: domus task defer <id> [--note <text>]");
+    process.exit(1);
+  }
+
+  const { tasks, task } = await findTask(root, id);
+
+  if (!isValidTransition(task.status, "deferred")) {
+    console.error(
+      `Cannot defer task ${id}: invalid transition from ${task.status}`,
+    );
+    process.exit(1);
+  }
+
+  const note = parseFlag(args, "--note") || null;
+  await transitionTask(root, tasks, task, "deferred", { outcomeNote: note });
+}
+
+// ── reopen ───────────────────────────────────────────────────────────────────
+
+async function cmdReopen(args: string[]): Promise<void> {
+  if (hasFlag(args, "--help") || hasFlag(args, "-h")) {
+    console.log("Usage: domus task reopen <id>");
+    return;
+  }
+
+  const root = projectRoot();
+  const [id] = args;
+
+  if (!id || id.startsWith("-")) {
+    console.error("Usage: domus task reopen <id>");
+    process.exit(1);
+  }
+
+  const { tasks, task } = await findTask(root, id);
+
+  if (!isValidTransition(task.status, "raw")) {
+    console.error(
+      `Cannot reopen task ${id}: invalid transition from ${task.status}`,
+    );
+    process.exit(1);
+  }
+
+  await transitionTask(root, tasks, task, "raw");
+}
+
+// ── status (power tool) ─────────────────────────────────────────────────────
 
 async function cmdStatus(args: string[]): Promise<void> {
   if (hasFlag(args, "--help") || hasFlag(args, "-h")) {
-    console.log("Usage: domus task status <id> <open|in-progress|ready-for-senior-review|done|cancelled|deferred> [--outcome <text>]");
+    console.log(
+      `Usage: domus task status <id> <${VALID_STATUSES.join("|")}> [--outcome <text>]`,
+    );
     return;
   }
 
@@ -165,7 +337,7 @@ async function cmdStatus(args: string[]): Promise<void> {
 
   if (!id || !newStatus) {
     console.error(
-      "Usage: domus task status <id> <open|in-progress|ready-for-senior-review|done|cancelled|deferred>",
+      `Usage: domus task status <id> <${VALID_STATUSES.join("|")}>`,
     );
     process.exit(1);
   }
@@ -177,53 +349,24 @@ async function cmdStatus(args: string[]): Promise<void> {
     process.exit(1);
   }
 
+  const { tasks, task } = await findTask(root, id);
+
+  if (!isValidTransition(task.status, newStatus as TaskStatus)) {
+    const allowed = VALID_TRANSITIONS[task.status] ?? [];
+    console.error(
+      `Invalid transition: ${task.status} → ${newStatus}. Allowed: ${allowed.join(", ")}`,
+    );
+    process.exit(1);
+  }
+
   const hasOutcomeFlag = hasFlag(args, "--outcome");
   const outcomeNote = parseFlag(args, "--outcome") || null;
-  const tasks = await readTasks(root);
-  const task = tasks.find((t) => t.id === id);
-
-  if (!task) {
-    console.error(`Task not found: ${id}`);
-    process.exit(1);
-  }
-
-  const oldStatus = task.status;
-  const allowedTransitions = VALID_TRANSITIONS[oldStatus] ?? [];
-  if (!allowedTransitions.includes(newStatus as TaskStatus)) {
-    console.error(
-      `Invalid transition: ${oldStatus} → ${newStatus}. Allowed: ${allowedTransitions.join(", ")}`,
-    );
-    process.exit(1);
-  }
-
-  task.status = newStatus as TaskStatus;
-  task.date_status_changed = today();
-
-  if (newStatus === "done") {
-    task.date_done = today();
-  }
-  if (hasOutcomeFlag) {
-    task.outcome_note = outcomeNote;
-  }
-
-  await writeTasks(root, tasks);
-  await updateMarkdownStatus(join(root, task.file), newStatus);
-  console.log(`Task ${id}: ${oldStatus} → ${newStatus}`);
-
-  if (newStatus === "done" && task.parent_id) {
-    const siblings = tasks.filter((t) => t.parent_id === task.parent_id);
-    const allDone = siblings.every(
-      (t) => t.id === id || t.status === "done",
-    );
-    if (allDone) {
-      const parent = tasks.find((t) => t.id === task.parent_id);
-      const parentTitle = parent ? `"${parent.title}"` : task.parent_id;
-      console.log(
-        `\nAll subtasks of ${parentTitle} are now complete — should I mark the parent done?`,
-      );
-    }
-  }
+  await transitionTask(root, tasks, task, newStatus as TaskStatus, {
+    outcomeNote: hasOutcomeFlag ? outcomeNote : undefined,
+  });
 }
+
+// ── ready ────────────────────────────────────────────────────────────────────
 
 async function cmdReady(_args: string[]): Promise<void> {
   const root = projectRoot();
@@ -236,14 +379,11 @@ async function cmdReady(_args: string[]): Promise<void> {
 
   const done = doneIds(tasks);
   const inProgress = tasks.filter((t) => t.status === "in-progress");
-  const readyAutonomous = tasks.filter(
-    (t) =>
-      t.status === "open" && t.refinement === "autonomous" && isReady(t, done),
+  const ready = tasks.filter((t) => t.status === "ready" && isReady(t, done));
+  const proposed = tasks.filter(
+    (t) => t.status === "proposed" && isReady(t, done),
   );
-  const readySupervised = tasks.filter(
-    (t) =>
-      t.status === "open" && t.refinement !== "autonomous" && isReady(t, done),
-  );
+  const raw = tasks.filter((t) => t.status === "raw" && isReady(t, done));
   const blocked = tasks.filter((t) => isBlocked(t, done));
 
   const fmt = (t: TaskEntry) =>
@@ -255,15 +395,21 @@ async function cmdReady(_args: string[]): Promise<void> {
     console.log();
   }
 
-  if (readyAutonomous.length > 0) {
-    console.log("## Ready (Autonomous)\n");
-    readyAutonomous.forEach((t) => console.log(fmt(t)));
+  if (ready.length > 0) {
+    console.log("## Ready\n");
+    ready.forEach((t) => console.log(fmt(t)));
     console.log();
   }
 
-  if (readySupervised.length > 0) {
-    console.log("## Ready (Supervised)\n");
-    readySupervised.forEach((t) => console.log(fmt(t)));
+  if (proposed.length > 0) {
+    console.log("## Proposed (needs human review)\n");
+    proposed.forEach((t) => console.log(fmt(t)));
+    console.log();
+  }
+
+  if (raw.length > 0) {
+    console.log("## Raw (needs refinement)\n");
+    raw.forEach((t) => console.log(fmt(t)));
     console.log();
   }
 
@@ -278,13 +424,16 @@ async function cmdReady(_args: string[]): Promise<void> {
 
   if (
     inProgress.length === 0 &&
-    readyAutonomous.length === 0 &&
-    readySupervised.length === 0 &&
+    ready.length === 0 &&
+    proposed.length === 0 &&
+    raw.length === 0 &&
     blocked.length === 0
   ) {
-    console.log("No open tasks.");
+    console.log("No active tasks.");
   }
 }
+
+// ── list ─────────────────────────────────────────────────────────────────────
 
 async function cmdList(args: string[]): Promise<void> {
   const root = projectRoot();
@@ -306,9 +455,11 @@ async function cmdList(args: string[]): Promise<void> {
   }
 
   const statusIcon: Record<TaskStatus, string> = {
-    open: "○",
+    raw: "○",
+    proposed: "◐",
+    ready: "◎",
     "in-progress": "◑",
-    "ready-for-senior-review": "◎",
+    "ready-for-senior-review": "⊙",
     done: "●",
     cancelled: "✕",
     deferred: "⏸",
@@ -316,9 +467,12 @@ async function cmdList(args: string[]): Promise<void> {
 
   filtered.forEach((t) => {
     const icon = statusIcon[t.status] ?? "?";
-    console.log(`${icon} [${t.refinement}] [${t.priority}] ${t.id} — ${t.title}`);
+    const autoFlag = t.autonomous ? " ⚙" : "";
+    console.log(`${icon} [${t.priority}] ${t.id}${autoFlag}`);
   });
 }
+
+// ── show ─────────────────────────────────────────────────────────────────────
 
 async function cmdShow(args: string[]): Promise<void> {
   if (hasFlag(args, "--help") || hasFlag(args, "-h")) {
@@ -346,20 +500,28 @@ async function cmdShow(args: string[]): Promise<void> {
   console.log();
   console.log(`ID:          ${task.id}`);
   console.log(`Status:      ${task.status}`);
-  console.log(`Refinement:  ${task.refinement}`);
+  console.log(`Autonomous:  ${task.autonomous}`);
   console.log(`Priority:    ${task.priority}`);
   console.log(`Captured:    ${task.date_captured}`);
   console.log(`Parent:      ${task.parent_id ?? "none"}`);
-  console.log(`Depends on:  ${task.depends_on.length > 0 ? task.depends_on.join(", ") : "none"}`);
+  console.log(
+    `Depends on:  ${task.depends_on.length > 0 ? task.depends_on.join(", ") : "none"}`,
+  );
   console.log(`Idea:        ${task.idea_id ?? "none"}`);
-  console.log(`Tags:        ${task.tags.length > 0 ? task.tags.join(", ") : "none"}`);
+  console.log(
+    `Tags:        ${task.tags.length > 0 ? task.tags.join(", ") : "none"}`,
+  );
   console.log(`Summary:     ${task.summary || "(none)"}`);
   if (task.outcome_note) console.log(`Outcome:     ${task.outcome_note}`);
 }
 
+// ── update ───────────────────────────────────────────────────────────────────
+
 async function cmdUpdate(args: string[]): Promise<void> {
   if (hasFlag(args, "--help") || hasFlag(args, "-h")) {
-    console.log("Usage: domus task update <id> [--title <title>] [--summary <text>] [--tags <tag1,tag2>] [--priority <priority>] [--refinement <refinement>] [--depends-on <id1,id2>] [--outcome <text>] [--note <text>] [--parent <id>] [--idea <id>]");
+    console.log(
+      "Usage: domus task update <id> [--title <title>] [--summary <text>] [--tags <tag1,tag2>] [--priority <priority>] [--autonomous] [--no-autonomous] [--depends-on <id1,id2>] [--outcome <text>] [--note <text>] [--parent <id>] [--idea <id>]",
+    );
     return;
   }
 
@@ -367,32 +529,39 @@ async function cmdUpdate(args: string[]): Promise<void> {
   const [id] = args;
 
   if (!id) {
-    console.error("Usage: domus task update <id> [--title <title>] [--summary <text>] [--tags <tag1,tag2>] [--priority <priority>] [--refinement <refinement>] [--depends-on <id1,id2>] [--outcome <text>] [--note <text>] [--parent <id>] [--idea <id>]");
+    console.error("Usage: domus task update <id> [options]");
     process.exit(1);
   }
 
-  const tasks = await readTasks(root);
-  const task = tasks.find((t) => t.id === id);
-
-  if (!task) {
-    console.error(`Task not found: ${id}`);
-    process.exit(1);
-  }
+  const { tasks, task } = await findTask(root, id);
 
   const newTitle = parseFlag(args, "--title");
   const newSummary = parseFlag(args, "--summary");
-  const newTags = parseFlag(args, "--tags")?.split(",").map((t) => t.trim()).filter(Boolean);
+  const newTags = parseFlag(args, "--tags")
+    ?.split(",")
+    .map((t) => t.trim())
+    .filter(Boolean);
   const newPriority = parseFlag(args, "--priority");
-  const newRefinement = parseFlag(args, "--refinement");
+  const setAutonomous = hasFlag(args, "--autonomous");
+  const setNoAutonomous = hasFlag(args, "--no-autonomous");
   const newDependsOn = parseFlag(args, "--depends-on");
   const newOutcome = parseFlag(args, "--outcome");
   const newNote = parseFlag(args, "--note");
   const newParent = parseFlag(args, "--parent");
   const newIdea = parseFlag(args, "--idea");
 
-  const hasUpdate = newTitle || newSummary || newTags || newPriority || newRefinement ||
-    newDependsOn !== undefined || newOutcome !== undefined || newNote ||
-    newParent !== undefined || newIdea !== undefined;
+  const hasUpdate =
+    newTitle ||
+    newSummary ||
+    newTags ||
+    newPriority ||
+    setAutonomous ||
+    setNoAutonomous ||
+    newDependsOn !== undefined ||
+    newOutcome !== undefined ||
+    newNote ||
+    newParent !== undefined ||
+    newIdea !== undefined;
 
   if (!hasUpdate) {
     console.error("Nothing to update. Provide at least one flag.");
@@ -402,8 +571,10 @@ async function cmdUpdate(args: string[]): Promise<void> {
   if (newTitle) task.title = newTitle;
   if (newSummary) task.summary = newSummary;
   if (newTags) task.tags = newTags;
-  if (newPriority) task.priority = validateEnum(newPriority, VALID_PRIORITIES, "priority");
-  if (newRefinement) task.refinement = validateEnum(newRefinement, VALID_REFINEMENTS, "refinement");
+  if (newPriority)
+    task.priority = validateEnum(newPriority, VALID_PRIORITIES, "priority");
+  if (setAutonomous) task.autonomous = true;
+  if (setNoAutonomous) task.autonomous = false;
   if (newDependsOn !== undefined) {
     task.depends_on = newDependsOn
       .split(",")
@@ -419,19 +590,27 @@ async function cmdUpdate(args: string[]): Promise<void> {
 
   const filePath = join(root, task.file);
   if (!existsSync(filePath)) {
-    console.warn(`Warning: markdown file not found, JSONL updated but .md not synced: ${filePath}`);
+    console.warn(
+      `Warning: markdown file not found, JSONL updated but .md not synced: ${filePath}`,
+    );
   } else {
     let content = await readFile(filePath, "utf-8");
     if (newTitle) content = updateMarkdownTitle(content, "Task", newTitle);
-    if (newPriority) content = updateBoldField(content, "Priority", task.priority);
-    if (newRefinement) content = updateBoldField(content, "Refinement", task.refinement);
+    if (newPriority)
+      content = updateBoldField(content, "Priority", task.priority);
+    if (setAutonomous || setNoAutonomous)
+      content = updateBoldField(content, "Autonomous", String(task.autonomous));
     if (newDependsOn !== undefined) {
-      const depsStr = task.depends_on.length > 0 ? task.depends_on.join(", ") : "none";
+      const depsStr =
+        task.depends_on.length > 0 ? task.depends_on.join(", ") : "none";
       content = updateBoldField(content, "Depends on", depsStr);
     }
-    if (newParent !== undefined) content = updateBoldField(content, "Parent", task.parent_id ?? "none");
-    if (newIdea !== undefined) content = updateBoldField(content, "Idea", task.idea_id ?? "none");
-    if (newSummary) content = updateSection(content, "What This Task Is", newSummary);
+    if (newParent !== undefined)
+      content = updateBoldField(content, "Parent", task.parent_id ?? "none");
+    if (newIdea !== undefined)
+      content = updateBoldField(content, "Idea", task.idea_id ?? "none");
+    if (newSummary)
+      content = updateSection(content, "What This Task Is", newSummary);
     await writeFile(filePath, content, "utf-8");
   }
 
@@ -439,6 +618,19 @@ async function cmdUpdate(args: string[]): Promise<void> {
 }
 
 // ── Execution log ─────────────────────────────────────────────────────────────
+
+async function logToExecutionLog(
+  root: string,
+  id: string,
+  message: string,
+): Promise<void> {
+  const logsDir = join(root, DOMUS_DIR, "execution-logs");
+  const logFile = join(logsDir, `${id}.md`);
+  if (!existsSync(logFile)) return; // no execution log yet — that's fine
+  const timestamp = new Date().toISOString();
+  const logEntry = `## ${timestamp}\n\n${message}\n\n---\n`;
+  await appendFile(logFile, logEntry, "utf-8");
+}
 
 async function cmdStart(args: string[]): Promise<void> {
   if (hasFlag(args, "--help") || hasFlag(args, "-h")) {
@@ -460,39 +652,27 @@ async function cmdStart(args: string[]): Promise<void> {
     process.exit(1);
   }
 
-  const tasks = await readTasks(root);
-  const task = tasks.find((t) => t.id === id);
+  const { tasks, task } = await findTask(root, id);
 
-  if (!task) {
-    console.error(`Task not found: ${id}`);
-    process.exit(1);
-  }
-
-  // Transition to in-progress using the same transition logic
-  const oldStatus = task.status;
-  const allowedTransitions = VALID_TRANSITIONS[oldStatus] ?? [];
-  if (!allowedTransitions.includes("in-progress")) {
+  if (!isValidTransition(task.status, "in-progress")) {
     console.error(
-      `Cannot start task ${id}: invalid transition ${oldStatus} → in-progress`,
+      `Cannot start task ${id}: invalid transition ${task.status} → in-progress`,
     );
     process.exit(1);
   }
 
-  task.status = "in-progress";
-  task.date_status_changed = today();
-  task.branch = branch;
-
-  await writeTasks(root, tasks);
-  await updateMarkdownStatus(join(root, task.file), "in-progress");
+  await transitionTask(root, tasks, task, "in-progress", { branch });
 
   // Write branch to task markdown frontmatter
   const filePath = join(root, task.file);
   if (existsSync(filePath)) {
     let content = await readFile(filePath, "utf-8");
     if (content.includes("**Branch:**")) {
-      content = content.replace(/^\*\*Branch:\*\* .+$/m, `**Branch:** ${branch}`);
+      content = content.replace(
+        /^\*\*Branch:\*\* .+$/m,
+        `**Branch:** ${branch}`,
+      );
     } else {
-      // Insert after Status line
       content = content.replace(
         /^(\*\*Status:\*\* .+)$/m,
         `$1\n**Branch:** ${branch}`,
@@ -516,7 +696,6 @@ async function cmdStart(args: string[]): Promise<void> {
 `;
   await writeFile(logFile, logContent, "utf-8");
 
-  console.log(`Task ${id}: ${oldStatus} → in-progress`);
   console.log(`  Branch:    ${branch}`);
   console.log(`  Log:       ${DOMUS_DIR}/execution-logs/${id}.md`);
 }
@@ -561,7 +740,7 @@ ${message}
 
   // Append to audit log
   const auditFile = join(root, DOMUS_DIR, "audit.jsonl");
-  const auditEntry = JSON.stringify({ id, message, timestamp, branch }) + "\n";
+  const auditEntry = `${JSON.stringify({ id, message, timestamp, branch })}\n`;
   await appendFile(auditFile, auditEntry, "utf-8");
 
   console.log(`Logged to ${DOMUS_DIR}/execution-logs/${id}.md`);
@@ -583,26 +762,49 @@ async function cmdOverview(args: string[]): Promise<void> {
 
   const done = doneIds(tasks);
 
-  const visibleStatuses = new Set<TaskStatus>(["open", "in-progress", "ready-for-senior-review"]);
-  if (includeDone) visibleStatuses.add("done");
-
-  const autonomous: TaskEntry[] = [];
-  const blocked: TaskEntry[] = [];
-  const supervised: TaskEntry[] = [];
+  // Group by status, then separate blocked
+  const readyTasks: TaskEntry[] = [];
+  const inProgressTasks: TaskEntry[] = [];
+  const proposedTasks: TaskEntry[] = [];
+  const rawTasks: TaskEntry[] = [];
+  const blockedTasks: TaskEntry[] = [];
+  const doneTasks: TaskEntry[] = [];
 
   for (const t of tasks) {
-    if (!visibleStatuses.has(t.status)) continue;
+    if (t.status === "cancelled" || t.status === "deferred") continue;
+    if (t.status === "done") {
+      if (includeDone) doneTasks.push(t);
+      continue;
+    }
 
     if (isBlocked(t, done)) {
-      blocked.push(t);
-    } else if (t.refinement === "autonomous") {
-      autonomous.push(t);
-    } else {
-      supervised.push(t);
+      blockedTasks.push(t);
+      continue;
+    }
+
+    switch (t.status) {
+      case "ready":
+        readyTasks.push(t);
+        break;
+      case "in-progress":
+        inProgressTasks.push(t);
+        break;
+      case "proposed":
+        proposedTasks.push(t);
+        break;
+      case "raw":
+        rawTasks.push(t);
+        break;
     }
   }
 
-  const hasAny = autonomous.length > 0 || blocked.length > 0 || supervised.length > 0;
+  const hasAny =
+    readyTasks.length > 0 ||
+    inProgressTasks.length > 0 ||
+    proposedTasks.length > 0 ||
+    rawTasks.length > 0 ||
+    blockedTasks.length > 0 ||
+    doneTasks.length > 0;
 
   if (interval) {
     console.log(ansi("2", `↻ ${interval}s`));
@@ -615,28 +817,33 @@ async function cmdOverview(args: string[]): Promise<void> {
 
   const taskMap = new Map(tasks.map((t) => [t.id, t]));
 
-  if (autonomous.length > 0) {
-    console.log(sectionHeader("Outstanding - Autonomous"));
-    for (const t of autonomous) {
-      console.log(formatAutonomousRow(t));
-    }
-    if (blocked.length > 0 || supervised.length > 0) console.log();
-  }
+  // Order: Ready → In Progress → Proposed → Raw → Blocked → Done
+  const sections: [string, TaskEntry[]][] = [
+    ["Ready", readyTasks],
+    ["In Progress", inProgressTasks],
+    ["Proposed", proposedTasks],
+    ["Raw", rawTasks],
+    ["Blocked", blockedTasks],
+    ["Done", doneTasks],
+  ];
 
-  if (blocked.length > 0) {
-    console.log(sectionHeader("Blocked"));
-    for (const t of blocked) {
-      for (const line of formatBlockedTree(t, done, taskMap)) {
-        console.log(line);
+  let firstSection = true;
+  for (const [label, items] of sections) {
+    if (items.length === 0) continue;
+    if (!firstSection) console.log();
+    firstSection = false;
+
+    console.log(sectionHeader(label));
+    if (label === "Blocked") {
+      for (const t of items) {
+        for (const line of formatBlockedTree(t, done, taskMap)) {
+          console.log(line);
+        }
       }
-    }
-    if (supervised.length > 0) console.log();
-  }
-
-  if (supervised.length > 0) {
-    console.log(sectionHeader("Outstanding - Supervised"));
-    for (const t of supervised) {
-      console.log(formatRow(t));
+    } else {
+      for (const t of items) {
+        console.log(formatRow(t));
+      }
     }
   }
 }
@@ -649,10 +856,24 @@ function cmdWatch(args: string[]): void {
   }
 
   const interval = parseFlag(args, "--interval") ?? "10";
-  const passthroughArgs = args.filter((a, i) => a !== "--interval" && args[i - 1] !== "--interval");
+  const passthroughArgs = args.filter(
+    (a, i) => a !== "--interval" && args[i - 1] !== "--interval",
+  );
   const domusBin = Bun.which("domus") ?? "domus";
   const result = Bun.spawnSync(
-    [watchBin, "-c", "-t", "-n", interval, domusBin, "task", "overview", "--interval", interval, ...passthroughArgs],
+    [
+      watchBin,
+      "-c",
+      "-t",
+      "-n",
+      interval,
+      domusBin,
+      "task",
+      "overview",
+      "--interval",
+      interval,
+      ...passthroughArgs,
+    ],
     { stdio: ["inherit", "inherit", "inherit"] },
   );
   process.exit(result.exitCode ?? 0);
@@ -665,8 +886,12 @@ domus task — task management
 
 Usage:
   domus task add --title <title> [options]
-  domus task status <id> <open|in-progress|ready-for-senior-review|done|cancelled|deferred> [--outcome <text>]
-  domus task update <id> [--title <title>] [--summary <text>] [--tags <tag1,tag2>] [--priority <priority>] [--refinement <refinement>] [--depends-on <id1,id2>] [--outcome <text>] [--note <text>] [--parent <id>] [--idea <id>]
+  domus task advance <id> [--note <text>]
+  domus task cancel <id> [--note <text>]
+  domus task defer <id> [--note <text>]
+  domus task reopen <id>
+  domus task status <id> <status> [--outcome <text>]
+  domus task update <id> [options]
   domus task show <id>
   domus task start <id> --branch <branch>
   domus task log <id> <message>
@@ -677,15 +902,19 @@ Usage:
 
 Subcommands:
   add       Create a new task (writes to .domus/tasks/)
-  status    Update task status
-  update    Update metadata fields (title, summary, tags, priority, refinement, depends-on, outcome, note, parent, idea)
+  advance   Move task to its next status
+  cancel    Cancel a task (from any active state)
+  defer     Defer a task (from any active state)
+  reopen    Reopen a cancelled or deferred task (→ raw)
+  status    Set task status directly (Doctor power tool)
+  update    Update metadata fields
   show      Print full detail for a single task
   start     Mark task in-progress, record branch, create execution log
   log       Append a timestamped entry to the execution log
-  overview  Compact watch-friendly overview grouped by Supervised / Autonomous
+  overview  Compact watch-friendly overview grouped by status
   ready     Show what's ready to work on (grouped by readiness)
   list      List all tasks (--json for machine-readable output)
-  watch     Live-refresh overview via watch(1) (pass extra args through)
+  watch     Live-refresh overview via watch(1)
 `.trim();
 
 export async function runTask(args: string[]): Promise<void> {
@@ -694,6 +923,18 @@ export async function runTask(args: string[]): Promise<void> {
   switch (sub) {
     case "add":
       await cmdAdd(args.slice(1));
+      break;
+    case "advance":
+      await cmdAdvance(args.slice(1));
+      break;
+    case "cancel":
+      await cmdCancel(args.slice(1));
+      break;
+    case "defer":
+      await cmdDefer(args.slice(1));
+      break;
+    case "reopen":
+      await cmdReopen(args.slice(1));
       break;
     case "status":
       await cmdStatus(args.slice(1));

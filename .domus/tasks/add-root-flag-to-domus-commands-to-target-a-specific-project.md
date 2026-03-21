@@ -2,7 +2,7 @@
 
 **ID:** add-root-flag-to-domus-commands-to-target-a-specific-project
 **Status:** done
-**Refinement:** autonomous
+**Autonomous:** true
 **Priority:** high
 **Captured:** 2026-03-14
 **Parent:** none
