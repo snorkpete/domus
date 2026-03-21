@@ -83,6 +83,12 @@ Only dispatch tasks that are `ready` status. If the task is not ready, advance i
 
 Run `domus config set-branch [<branch>]` when the user explicitly mentions the domus branch config — e.g. "set the domus branch", "update the domus branch config", "change the domus base branch". If no branch is given, the current git branch is detected automatically. Do not trigger on generic git branch mentions.
 
+## Staff — always-present roles
+
+@staff/role-activation-rules.md
+@staff/roles/butler.md
+@staff/roles/foreman.md
+
 ## Further reading (load when needed)
 
 - `docs/cli-reference.md` — read when using the domus CLI directly (command syntax, flags)
