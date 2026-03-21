@@ -11,6 +11,8 @@ import {
 
 export async function cmdOverview(args: string[]): Promise<void> {
   const includeDone = hasFlag(args, "--include-done");
+  const includeDeferred = hasFlag(args, "--include-deferred");
+  const includeCancelled = hasFlag(args, "--include-cancelled");
   const interval = parseFlag(args, "--interval");
 
   const root = projectRoot();
@@ -30,9 +32,20 @@ export async function cmdOverview(args: string[]): Promise<void> {
   const rawTasks: TaskEntry[] = [];
   const blockedTasks: TaskEntry[] = [];
   const doneTasks: TaskEntry[] = [];
+  const deferredTasks: TaskEntry[] = [];
+  const cancelledTasks: TaskEntry[] = [];
 
   for (const t of tasks) {
-    if (t.status === "cancelled" || t.status === "deferred") {
+    if (t.status === "deferred") {
+      if (includeDeferred) {
+        deferredTasks.push(t);
+      }
+      continue;
+    }
+    if (t.status === "cancelled") {
+      if (includeCancelled) {
+        cancelledTasks.push(t);
+      }
       continue;
     }
     if (t.status === "done") {
@@ -70,7 +83,9 @@ export async function cmdOverview(args: string[]): Promise<void> {
     proposedTasks.length > 0 ||
     rawTasks.length > 0 ||
     blockedTasks.length > 0 ||
-    doneTasks.length > 0;
+    doneTasks.length > 0 ||
+    deferredTasks.length > 0 ||
+    cancelledTasks.length > 0;
 
   if (interval) {
     console.log(ansi("2", `↻ ${interval}s`));
@@ -83,7 +98,7 @@ export async function cmdOverview(args: string[]): Promise<void> {
 
   const taskMap = new Map(tasks.map((t) => [t.id, t]));
 
-  // Order: Ready → In Progress → Proposed → Raw → Blocked → Done
+  // Order: Ready → In Progress → Proposed → Raw → Blocked → Done → Deferred → Cancelled
   const sections: [string, TaskEntry[]][] = [
     ["Ready", readyTasks],
     ["In Progress", inProgressTasks],
@@ -91,6 +106,8 @@ export async function cmdOverview(args: string[]): Promise<void> {
     ["Raw", rawTasks],
     ["Blocked", blockedTasks],
     ["Done", doneTasks],
+    ["Deferred", deferredTasks],
+    ["Cancelled", cancelledTasks],
   ];
 
   let firstSection = true;

@@ -914,3 +914,128 @@ test("log: exits if task not found", async () => {
   }
   expect(trap.didExit()).toBe(true);
 });
+
+// ── overview: deferred and cancelled flags ────────────────────────────────────
+
+test("overview: default hides deferred tasks", async () => {
+  await runTask(["add", "--title", "Raw Task"]);
+  await runTask(["add", "--title", "Deferred Task"]);
+  await runTask(["defer", "deferred-task"]);
+
+  const out = captureOutput();
+  try {
+    await runTask(["overview"]);
+  } finally {
+    out.restore();
+  }
+  const output = stripAnsi(out.lines().join("\n"));
+  expect(output).toContain("raw-task");
+  expect(output).not.toContain("deferred-task");
+});
+
+test("overview: default hides cancelled tasks", async () => {
+  await runTask(["add", "--title", "Raw Task"]);
+  await runTask(["add", "--title", "Cancelled Task"]);
+  await runTask(["cancel", "cancelled-task"]);
+
+  const out = captureOutput();
+  try {
+    await runTask(["overview"]);
+  } finally {
+    out.restore();
+  }
+  const output = stripAnsi(out.lines().join("\n"));
+  expect(output).toContain("raw-task");
+  expect(output).not.toContain("cancelled-task");
+});
+
+test("overview: --include-deferred shows deferred tasks in Deferred section", async () => {
+  await runTask(["add", "--title", "Raw Task"]);
+  await runTask(["add", "--title", "Deferred Task"]);
+  await runTask(["defer", "deferred-task"]);
+
+  const out = captureOutput();
+  try {
+    await runTask(["overview", "--include-deferred"]);
+  } finally {
+    out.restore();
+  }
+  const output = stripAnsi(out.lines().join("\n"));
+  expect(output).toContain("raw-task");
+  expect(output).toContain("Deferred");
+  expect(output).toContain("deferred-task");
+});
+
+test("overview: --include-cancelled shows cancelled tasks in Cancelled section", async () => {
+  await runTask(["add", "--title", "Raw Task"]);
+  await runTask(["add", "--title", "Cancelled Task"]);
+  await runTask(["cancel", "cancelled-task"]);
+
+  const out = captureOutput();
+  try {
+    await runTask(["overview", "--include-cancelled"]);
+  } finally {
+    out.restore();
+  }
+  const output = stripAnsi(out.lines().join("\n"));
+  expect(output).toContain("raw-task");
+  expect(output).toContain("Cancelled");
+  expect(output).toContain("cancelled-task");
+});
+
+test("overview: --include-deferred and --include-cancelled are independent", async () => {
+  await runTask(["add", "--title", "Raw Task"]);
+  await runTask(["add", "--title", "Deferred Task"]);
+  await runTask(["add", "--title", "Cancelled Task"]);
+  await runTask(["defer", "deferred-task"]);
+  await runTask(["cancel", "cancelled-task"]);
+
+  const outDeferred = captureOutput();
+  try {
+    await runTask(["overview", "--include-deferred"]);
+  } finally {
+    outDeferred.restore();
+  }
+  const deferredOutput = stripAnsi(outDeferred.lines().join("\n"));
+  expect(deferredOutput).toContain("deferred-task");
+  expect(deferredOutput).not.toContain("cancelled-task");
+
+  const outCancelled = captureOutput();
+  try {
+    await runTask(["overview", "--include-cancelled"]);
+  } finally {
+    outCancelled.restore();
+  }
+  const cancelledOutput = stripAnsi(outCancelled.lines().join("\n"));
+  expect(cancelledOutput).not.toContain("deferred-task");
+  expect(cancelledOutput).toContain("cancelled-task");
+});
+
+test("overview: section order is Deferred after Done, Cancelled after Deferred", async () => {
+  await runTask(["add", "--title", "Raw Task"]);
+  await runTask(["add", "--title", "Done Task"]);
+  await runTask(["add", "--title", "Deferred Task"]);
+  await runTask(["add", "--title", "Cancelled Task"]);
+  await runTask(["status", "done-task", "done"]);
+  await runTask(["defer", "deferred-task"]);
+  await runTask(["cancel", "cancelled-task"]);
+
+  const out = captureOutput();
+  try {
+    await runTask([
+      "overview",
+      "--include-done",
+      "--include-deferred",
+      "--include-cancelled",
+    ]);
+  } finally {
+    out.restore();
+  }
+  const output = stripAnsi(out.lines().join("\n"));
+  const doneIdx = output.indexOf("Done");
+  const deferredIdx = output.indexOf("Deferred");
+  const cancelledIdx = output.indexOf("Cancelled");
+  expect(doneIdx).toBeGreaterThanOrEqual(0);
+  expect(deferredIdx).toBeGreaterThan(doneIdx);
+  expect(cancelledIdx).toBeGreaterThan(deferredIdx);
+});
