@@ -61,6 +61,10 @@ A **task** is for known implementation work. Even if details need refinement, th
 
 When in doubt: if you don't know whether something will be built, it's an idea. If you know it will, it's a task.
 
+## Updating the base branch config
+
+Run `domus config set-branch [<branch>]` when the user explicitly mentions the domus branch config — e.g. "set the domus branch", "update the domus branch config", "change the domus base branch". If no branch is given, the current git branch is detected automatically. Do not trigger on generic git branch mentions.
+
 ## Further reading (load when needed)
 
 - `docs/cli-reference.md` — read when using the domus CLI directly (command syntax, flags)

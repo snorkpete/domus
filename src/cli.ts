@@ -1,5 +1,6 @@
 #!/usr/bin/env bun
 import { version } from "../package.json";
+import { runConfig } from "./commands/config.ts";
 import { runDispatch } from "./commands/dispatch.ts";
 import { runIdea } from "./commands/idea.ts";
 import { runInit } from "./commands/init.ts";
@@ -16,6 +17,7 @@ Usage:
   domus idea                     Manage ideas (domus idea --help)
   domus init                     Initialise a .domus/ directory
   domus update                   Update an existing .domus/ directory and migrate schemas
+  domus config <subcommand>      Manage project configuration (domus config --help)
   domus dispatch <task-id>       Dispatch a worker for a task
   domus task <subcommand>        Manage project tasks
 
@@ -53,6 +55,10 @@ async function main() {
 
     case "update":
       await runUpdate(args.slice(1));
+      break;
+
+    case "config":
+      await runConfig(args.slice(1));
       break;
 
     case "dispatch":
