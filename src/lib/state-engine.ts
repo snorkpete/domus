@@ -24,7 +24,7 @@ const VALID_TRANSITIONS: Record<TaskStatus, TaskStatus[]> = {
   ready: ["in-progress", ...ESCAPE_HATCHES],
   "in-progress": ["done", ...ESCAPE_HATCHES],
   "ready-for-senior-review": ["done", "in-progress", ...ESCAPE_HATCHES],
-  done: [...ESCAPE_HATCHES],
+  done: ["raw"],
   cancelled: ["raw"],
   deferred: ["raw"],
 };
@@ -39,7 +39,7 @@ const DOCTOR_TRANSITIONS: Record<TaskStatus, TaskStatus[]> = {
   ready: ["in-progress", "done", ...ESCAPE_HATCHES],
   "in-progress": ["ready-for-senior-review", "done", ...ESCAPE_HATCHES],
   "ready-for-senior-review": ["done", "in-progress", ...ESCAPE_HATCHES],
-  done: [...ESCAPE_HATCHES],
+  done: ["raw"],
   cancelled: ["raw"],
   deferred: ["raw"],
 };

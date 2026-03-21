@@ -1,7 +1,7 @@
 import { hasFlag, parseFlag } from "../../lib/args.ts";
 import { projectRoot } from "../../lib/jsonl.ts";
 import { doneIds, isBlocked, readTasks } from "../../lib/task-store.ts";
-import type { TaskEntry, TaskStatus } from "../../lib/task-types.ts";
+import type { TaskEntry } from "../../lib/task-types.ts";
 import {
   ansi,
   formatBlockedTree,
