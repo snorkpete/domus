@@ -1,7 +1,7 @@
 # Task: Add skill syncing to domus init
 
 **ID:** add-skill-syncing-to-domus-init
-**Status:** raw
+**Status:** cancelled
 **Autonomous:** false
 **Priority:** high
 **Captured:** 2026-03-18

@@ -1,7 +1,7 @@
 # Task: Implement project memory in .domus/memory/
 
 **ID:** implement-project-memory-in-domusmemory
-**Status:** raw
+**Status:** deferred
 **Autonomous:** false
 **Priority:** normal
 **Captured:** 2026-03-18
