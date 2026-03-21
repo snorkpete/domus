@@ -286,18 +286,23 @@ async function resolveGitBranch(projectPath: string): Promise<string> {
   return "main";
 }
 
-export async function setBranch(projectPath: string): Promise<void> {
-  const currentBranch = await resolveGitBranch(projectPath);
+export async function setBranch(
+  projectPath: string,
+  branch?: string,
+): Promise<string> {
+  const resolvedBranch = branch ?? (await resolveGitBranch(projectPath));
   const domusRoot = join(projectPath, DOMUS_DIR);
+  await mkdir(domusRoot, { recursive: true });
   const config: DomusConfig = {
     root: domusRoot,
-    branch: currentBranch,
+    branch: resolvedBranch,
   };
   await writeFile(
     join(domusRoot, "config.json"),
     `${JSON.stringify(config, null, 2)}\n`,
     "utf-8",
   );
+  return resolvedBranch;
 }
 
 // ── Task schema migration ─────────────────────────────────────────────────────

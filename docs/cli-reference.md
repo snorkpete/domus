@@ -69,6 +69,41 @@ domus add project ~/code/myproject
 
 ---
 
+## domus config
+
+Manage Domus project configuration.
+
+```
+domus config <subcommand>
+domus config --help
+```
+
+### domus config set-branch
+
+Update the base branch recorded in `.domus/config.json`.
+
+```
+domus config set-branch [<branch>]
+```
+
+**Arguments:**
+- `<branch>` — (optional) Branch name to record. If omitted, the current git branch is detected automatically.
+
+**Behaviour:**
+- Creates `.domus/config.json` if it does not exist.
+- Prints confirmation: `Branch set to: <branch>`
+
+**Examples:**
+```
+domus config set-branch
+domus config set-branch main
+domus config set-branch feature/my-branch
+```
+
+Use this after renaming your default branch (e.g. `master` → `main`), or to explicitly set the base branch without re-running `domus init`.
+
+---
+
 ## domus dispatch
 
 Dispatch a worker to execute a ticket autonomously.
