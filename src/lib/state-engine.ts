@@ -26,7 +26,7 @@ const VALID_TRANSITIONS: Record<TaskStatus, TaskStatus[]> = {
   "ready-for-senior-review": ["done", "in-progress", ...ESCAPE_HATCHES],
   done: ["raw"],
   cancelled: ["raw"],
-  deferred: ["raw"],
+  deferred: ["raw", "cancelled"],
 };
 
 /**
@@ -41,7 +41,7 @@ const DOCTOR_TRANSITIONS: Record<TaskStatus, TaskStatus[]> = {
   "ready-for-senior-review": ["done", "in-progress", ...ESCAPE_HATCHES],
   done: ["raw"],
   cancelled: ["raw"],
-  deferred: ["raw"],
+  deferred: ["raw", "cancelled"],
 };
 
 export function nextStatus(current: TaskStatus): TaskStatus | null {

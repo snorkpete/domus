@@ -1,7 +1,7 @@
 # Task: Create update skill for tasks and ideas
 
 **ID:** create-update-skill-for-tasks-and-ideas
-**Status:** deferred
+**Status:** cancelled
 **Autonomous:** false
 **Priority:** normal
 **Captured:** 2026-03-17
