@@ -12,7 +12,13 @@ Read these in order:
 2. The execution log: `.domus/execution-logs/<task-id>.md` — if entries exist, you are resuming; pick up from the last completed step
 3. Any referenced ADRs or specs listed in the task file
 
-Do not start work until you have read the task file and execution log.
+Then name your branch descriptively before doing any work:
+```
+git checkout -b task/<task-id>
+```
+If the branch already exists (resuming), check it out instead: `git checkout task/<task-id>`.
+
+Do not start work until you have read the task file, checked the execution log, and are on the correct branch.
 
 ## The --root flag
 
