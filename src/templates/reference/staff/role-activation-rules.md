@@ -6,9 +6,10 @@ Thin routing table for Butler. Load individual role files from `.domus/reference
 
 | Role | Load when |
 |------|-----------|
-| Oracle | Human has an idea to explore or articulate |
 | Taskmaster | A task needs refinement (raw → proposed → ready) |
 | Doctor | Store health check requested, data consistency concerns |
+
+> **Migrated to skills:** Oracle — now handled by the `oracle` skill (idea exploration, capture, refinement). No role file loading needed.
 
 ## Always-present roles (thin trigger here, full role on demand)
 
