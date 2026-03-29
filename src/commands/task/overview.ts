@@ -1,7 +1,7 @@
 import { hasFlag, parseFlag } from "../../lib/args.ts";
 import { projectRoot } from "../../lib/jsonl.ts";
 import { doneIds, isBlocked, readTasks } from "../../lib/task-store.ts";
-import type { TaskEntry } from "../../lib/task-types.ts";
+import type { TaskEntry, TaskPriority } from "../../lib/task-types.ts";
 import {
   ansi,
   formatBlockedTree,
@@ -94,6 +94,27 @@ export async function cmdOverview(args: string[]): Promise<void> {
   if (!hasAny) {
     console.log("No tasks to display.");
     return;
+  }
+
+  const priorityRank: Record<TaskPriority, number> = {
+    high: 0,
+    normal: 1,
+    low: 2,
+  };
+  const byPriority = (a: TaskEntry, b: TaskEntry) =>
+    priorityRank[a.priority] - priorityRank[b.priority];
+
+  for (const group of [
+    readyTasks,
+    inProgressTasks,
+    proposedTasks,
+    rawTasks,
+    blockedTasks,
+    doneTasks,
+    deferredTasks,
+    cancelledTasks,
+  ]) {
+    group.sort(byPriority);
   }
 
   const taskMap = new Map(tasks.map((t) => [t.id, t]));
