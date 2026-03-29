@@ -85,5 +85,5 @@ Run `domus config set-branch [<branch>]` when the user explicitly mentions the d
 
 - `docs/cli-reference.md` — read when using the domus CLI directly (command syntax, flags)
 - `decisions/000-vision.md` — read when scoping new features or when the right direction feels unclear
-- `decisions/003-personas-vs-skills.md` — read when working with the Domus staff and roles (Butler, Oracle, Worker, etc.)
+- `decisions/003-personas-vs-skills.md` — read when working with the Domus staff and roles (Butler, Worker, etc.)
 - `decisions/004-domus-store-and-worker-logging.md` — read when working with autonomous dispatch, worktrees, or execution logs

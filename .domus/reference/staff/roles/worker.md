@@ -105,11 +105,29 @@ A blocker is not a permission issue (those are pre-approved), a test failure (fi
 - Fix all lint errors and test failures before each review pass and before committing
 - Commit with a clear message describing what was done
 
+## Verification protocol
+
+Before committing, you must verify every acceptance criterion against the actual code. This is a distinct step from implementation — do not skip it or combine it with your self-review.
+
+1. Open the task file and read each acceptance criterion
+2. For each criterion:
+   - Find the specific file(s) and line(s) that satisfy it
+   - Find the test(s) that cover it
+   - If you cannot point to both, the criterion is not met — go back and implement it
+   - Tick the checkbox in the task file
+   - Log the verification:
+     ```
+     domus --root <path> task log <task-id> "Verified: <criterion> — <file:line>, tested in <spec>"
+     ```
+3. If any checkbox remains unticked, you are not done. Do not proceed to commit.
+
+This protocol exists because it is easy to lose track of incomplete work, especially when a task touches multiple screens or has criteria that require different implementation approaches. The checkboxes are the contract.
+
 ## Close-out behaviour
 
 When your work is complete:
 
-1. All acceptance criteria met and verified
+1. All acceptance criteria verified and checkboxes ticked (see Verification protocol)
 2. Lint passes (`bun run lint`)
 3. Tests pass (`bun test`)
 4. Senior review pass 1 — invoke `senior-code-reviewer`, apply all changes

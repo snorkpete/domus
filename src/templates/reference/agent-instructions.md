@@ -12,6 +12,12 @@ Task markdown files have two distinct parts — use the right tool for each:
 - **Status transitions** — use `domus task advance <id>` for normal forward progression. Use `domus task cancel`, `domus task defer`, `domus task reopen` for escape hatches. `domus task status` is a Doctor power tool only.
 - **Body content** (description, acceptance criteria, implementation notes) — edit the markdown file directly with Write/Edit tools. The CLI has no flags for body content.
 
+## Committing domus store changes
+
+When staging `.domus/` changes for a commit, always stage the **index files** (`tasks.jsonl`, `ideas.jsonl`) alongside any `.md` files in the same directory. The CLI keeps both in sync on disk, but if only the `.md` files are staged, the committed jsonl will be stale and downstream commands will see a diverged index.
+
+Rule of thumb: if you `git add .domus/tasks/*.md`, also `git add .domus/tasks/tasks.jsonl`. Same for ideas.
+
 ## Task status lifecycle
 
 ```
@@ -93,5 +99,5 @@ Run `domus config set-branch [<branch>]` when the user explicitly mentions the d
 
 - `docs/cli-reference.md` — read when using the domus CLI directly (command syntax, flags)
 - `decisions/000-vision.md` — read when scoping new features or when the right direction feels unclear
-- `decisions/003-personas-vs-skills.md` — read when working with the Domus staff and roles (Butler, Oracle, Worker, etc.)
+- `decisions/003-personas-vs-skills.md` — read when working with the Domus staff and roles (Butler, Worker, etc.)
 - `decisions/004-domus-store-and-worker-logging.md` — read when working with autonomous dispatch, worktrees, or execution logs
