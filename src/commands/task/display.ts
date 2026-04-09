@@ -24,10 +24,11 @@ export const STATUS_ICON: Record<TaskStatus | "blocked", string> = {
   ready: "◎",
   "in-progress": "◑",
   "ready-for-senior-review": "⊙",
-  done: "●",
+  done: "✔",
   cancelled: "✕",
   deferred: "⏸",
-  blocked: "⊘",
+  "wont-fix": "⊘",
+  blocked: "⊗",
 };
 
 // ── Coloring ──────────────────────────────────────────────────────────────────
@@ -51,6 +52,7 @@ export function statusAnsi(icon: string, status: TaskStatus): string {
     case "done":
       return ansi("32", icon); // green
     case "cancelled":
+    case "wont-fix":
       return ansi("2", icon); // dim
     default:
       return icon;

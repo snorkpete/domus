@@ -11,6 +11,7 @@ import {
 
 export async function cmdOverview(args: string[]): Promise<void> {
   const includeDone = hasFlag(args, "--include-done");
+  const includeWontFix = hasFlag(args, "--wont-fix");
   const interval = parseFlag(args, "--interval");
 
   const root = projectRoot();
@@ -30,9 +31,16 @@ export async function cmdOverview(args: string[]): Promise<void> {
   const rawTasks: TaskEntry[] = [];
   const blockedTasks: TaskEntry[] = [];
   const doneTasks: TaskEntry[] = [];
+  const wontFixTasks: TaskEntry[] = [];
 
   for (const t of tasks) {
     if (t.status === "cancelled" || t.status === "deferred") {
+      continue;
+    }
+    if (t.status === "wont-fix") {
+      if (includeWontFix) {
+        wontFixTasks.push(t);
+      }
       continue;
     }
     if (t.status === "done") {
@@ -70,7 +78,8 @@ export async function cmdOverview(args: string[]): Promise<void> {
     proposedTasks.length > 0 ||
     rawTasks.length > 0 ||
     blockedTasks.length > 0 ||
-    doneTasks.length > 0;
+    doneTasks.length > 0 ||
+    wontFixTasks.length > 0;
 
   if (interval) {
     console.log(ansi("2", `↻ ${interval}s`));
@@ -83,7 +92,7 @@ export async function cmdOverview(args: string[]): Promise<void> {
 
   const taskMap = new Map(tasks.map((t) => [t.id, t]));
 
-  // Order: Ready → In Progress → Proposed → Raw → Blocked → Done
+  // Order: Ready → In Progress → Proposed → Raw → Blocked → Done → Won't Fix
   const sections: [string, TaskEntry[]][] = [
     ["Ready", readyTasks],
     ["In Progress", inProgressTasks],
@@ -91,6 +100,7 @@ export async function cmdOverview(args: string[]): Promise<void> {
     ["Raw", rawTasks],
     ["Blocked", blockedTasks],
     ["Done", doneTasks],
+    ["Won't Fix", wontFixTasks],
   ];
 
   let firstSection = true;

@@ -8,7 +8,8 @@ export type TaskStatus =
   | "ready-for-senior-review"
   | "done"
   | "cancelled"
-  | "deferred";
+  | "deferred"
+  | "wont-fix";
 export type TaskPriority = "high" | "normal" | "low";
 
 export type TaskEntry = {
@@ -43,5 +44,6 @@ export const VALID_STATUSES: TaskStatus[] = [
   "done",
   "cancelled",
   "deferred",
+  "wont-fix",
 ];
 export const VALID_PRIORITIES: TaskPriority[] = ["high", "normal", "low"];

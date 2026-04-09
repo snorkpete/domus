@@ -3,7 +3,7 @@ import type { TaskStatus } from "./task-types.ts";
 // ── State engine ─────────────────────────────────────────────────────────────
 // Single source of truth for all task status transitions.
 
-const ESCAPE_HATCHES: TaskStatus[] = ["cancelled", "deferred"];
+const ESCAPE_HATCHES: TaskStatus[] = ["cancelled", "deferred", "wont-fix"];
 
 /** The standard forward progression path used by `domus task advance`. */
 const ADVANCE_MAP: Partial<Record<TaskStatus, TaskStatus>> = {
@@ -26,7 +26,8 @@ const VALID_TRANSITIONS: Record<TaskStatus, TaskStatus[]> = {
   "ready-for-senior-review": ["done", "in-progress", ...ESCAPE_HATCHES],
   done: ["raw"],
   cancelled: ["raw"],
-  deferred: ["raw"],
+  deferred: ["raw", "cancelled"],
+  "wont-fix": ["raw"],
 };
 
 /**
@@ -41,7 +42,8 @@ const DOCTOR_TRANSITIONS: Record<TaskStatus, TaskStatus[]> = {
   "ready-for-senior-review": ["done", "in-progress", ...ESCAPE_HATCHES],
   done: ["raw"],
   cancelled: ["raw"],
-  deferred: ["raw"],
+  deferred: ["raw", "cancelled"],
+  "wont-fix": ["raw"],
 };
 
 export function nextStatus(current: TaskStatus): TaskStatus | null {

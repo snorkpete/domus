@@ -24,6 +24,7 @@ export async function cmdAdd(args: string[]): Promise<void> {
     );
     console.log("         --autonomous --parent <id> --depends-on <id1,id2>");
     console.log("         --idea <idea-id> --outcome <text> --note <text>");
+    console.log("         --wont-fix  Create task directly in wont-fix status");
     return;
   }
 
@@ -46,6 +47,7 @@ export async function cmdAdd(args: string[]): Promise<void> {
     "priority",
   );
   const autonomous = hasFlag(args, "--autonomous");
+  const wontFix = hasFlag(args, "--wont-fix");
   const parentId = parseFlag(args, "--parent") ?? null;
   const dependsOn =
     parseFlag(args, "--depends-on")
@@ -68,7 +70,7 @@ export async function cmdAdd(args: string[]): Promise<void> {
     title,
     file,
     date_captured: dateToday,
-    status: "raw",
+    status: wontFix ? "wont-fix" : "raw",
     autonomous,
     priority,
     parent_id: parentId,
@@ -88,10 +90,30 @@ export async function cmdAdd(args: string[]): Promise<void> {
 
   const detailPath = join(root, file);
   const dependsOnStr = dependsOn.length > 0 ? dependsOn.join(", ") : "none";
-  const detailContent = `# Task: ${title}
+  const initialStatus = wontFix ? "wont-fix" : "raw";
+  const detailContent = wontFix
+    ? `# Task: ${title}
 
 **ID:** ${id}
-**Status:** raw
+**Status:** wont-fix
+**Autonomous:** ${autonomous}
+**Priority:** ${priority}
+**Captured:** ${dateToday}
+**Parent:** ${parentId ?? "none"}
+**Depends on:** ${dependsOnStr}
+**Idea:** ${ideaId ?? "none"}
+**Spec refs:** none
+
+---
+
+## What This Task Is
+
+${summary || "_No description yet._"}
+`
+    : `# Task: ${title}
+
+**ID:** ${id}
+**Status:** ${initialStatus}
 **Autonomous:** ${autonomous}
 **Priority:** ${priority}
 **Captured:** ${dateToday}

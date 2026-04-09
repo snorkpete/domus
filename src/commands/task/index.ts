@@ -12,6 +12,7 @@ import { cmdStart } from "./start.ts";
 import { cmdStatus } from "./status.ts";
 import { cmdUpdate } from "./update.ts";
 import { cmdWatch } from "./watch.ts";
+import { cmdWontfix } from "./wontfix.ts";
 
 const TASK_USAGE = `
 domus task — task management
@@ -21,6 +22,7 @@ Usage:
   domus task advance <id> [--note <text>]
   domus task cancel <id> [--note <text>]
   domus task defer <id> [--note <text>]
+  domus task wontfix <id> [--note <text>]
   domus task reopen <id>
   domus task status <id> <status> [--outcome <text>]
   domus task update <id> [options]
@@ -37,7 +39,8 @@ Subcommands:
   advance   Move task to its next status
   cancel    Cancel a task (from any active state)
   defer     Defer a task (from any active state)
-  reopen    Reopen a cancelled or deferred task (→ raw)
+  wontfix   Mark a task as won't-fix (deliberate decision not to act)
+  reopen    Reopen a cancelled, deferred, or won't-fix task (→ raw)
   status    Set task status directly (Doctor power tool)
   update    Update metadata fields
   show      Print full detail for a single task
@@ -64,6 +67,9 @@ export async function runTask(args: string[]): Promise<void> {
       break;
     case "defer":
       await cmdDefer(args.slice(1));
+      break;
+    case "wontfix":
+      await cmdWontfix(args.slice(1));
       break;
     case "reopen":
       await cmdReopen(args.slice(1));

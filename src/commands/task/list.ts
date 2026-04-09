@@ -14,9 +14,13 @@ export async function cmdList(args: string[]): Promise<void> {
   }
 
   const filterStatus = parseFlag(args, "--status") as TaskStatus | undefined;
+  const includeWontFix = hasFlag(args, "--wont-fix");
   const filtered = filterStatus
     ? tasks.filter((t) => t.status === filterStatus)
-    : tasks;
+    : tasks.filter(
+        (t) =>
+          t.status !== "done" && (includeWontFix || t.status !== "wont-fix"),
+      );
 
   if (hasFlag(args, "--json")) {
     console.log(JSON.stringify(filtered, null, 2));
