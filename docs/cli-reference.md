@@ -157,6 +157,7 @@ domus task add --title <title> [options]
 | `--parent <id>` | Parent task ID (for subtasks). | (none) |
 | `--depends-on <id1,id2>` | Comma-separated dependency task IDs. | (none) |
 | `--idea <idea-id>` | Link to an originating idea. | (none) |
+| `--wont-fix` | Create task directly in `wont-fix` status. Omits Acceptance Criteria and Implementation Notes sections from the task file. | — |
 
 **Output:** Prints the generated task ID and file path.
 
@@ -190,6 +191,33 @@ domus task status <id> <new-status> [--note <text>]
 ```
 domus task status add-login-page in-progress
 domus task status add-login-page done --note "Shipped in v1.2"
+```
+
+---
+
+### domus task wontfix
+
+Mark a task as won't-fix — a deliberate decision not to act on it.
+
+```
+domus task wontfix <id> [--note <text>]
+```
+
+**Arguments:**
+- `<id>` — Task ID.
+
+**Optional:**
+- `--note <text>` — Reason for the won't-fix decision (stored as outcome note).
+
+**Notes:**
+- Reachable from any active state (raw, proposed, ready, in-progress).
+- Won't-fix tasks can be reopened with `domus task reopen` (transitions to `raw`).
+- Displayed with `⊘` icon.
+- Excluded from `domus task list` and `domus task overview` by default.
+
+**Example:**
+```
+domus task wontfix add-login-page --note "Out of scope for v1"
 ```
 
 ---
@@ -248,19 +276,23 @@ Prints title, status, refinement, priority, captured date, parent, dependencies,
 List all tasks.
 
 ```
-domus task list [--status <status>] [--json]
+domus task list [--status <status>] [--wont-fix] [--json]
 ```
 
 **Optional:**
 | Flag | Description |
 |------|-------------|
-| `--status <value>` | Filter by status: `open`, `in-progress`, `done`, `cancelled`, `deferred`. |
+| `--status <value>` | Filter by status: `raw`, `proposed`, `ready`, `in-progress`, `done`, `cancelled`, `deferred`, `wont-fix`. |
+| `--wont-fix` | Include won't-fix tasks alongside active tasks (won't-fix tasks are excluded by default). |
 | `--json` | Output full task records as JSON array. |
+
+**Default behaviour:** Excludes `done` and `wont-fix` tasks. Use `--status done` or `--status wont-fix` to see them, or `--wont-fix` to include won't-fix alongside active tasks.
 
 **Example:**
 ```
 domus task list
-domus task list --status open
+domus task list --status wont-fix
+domus task list --wont-fix
 domus task list --json
 ```
 
@@ -287,18 +319,18 @@ Prints three sections:
 Compact overview grouped by Autonomous / Blocked / Supervised. Designed for use with `watch`.
 
 ```
-domus task overview [--include-done]
+domus task overview [--include-done] [--wont-fix]
 ```
 
 **Optional:**
 | Flag | Description |
 |------|-------------|
 | `--include-done` | Include done tasks in the output. |
+| `--wont-fix` | Include won't-fix tasks in the output (shown in a "Won't Fix" section). |
 
 Displays tasks with ANSI colour coding:
 - Priority icons: `▲` (high), `·` (normal), `▼` (low)
-- Status icons: `○` open, `◑` in-progress, `●` done, `✕` cancelled, `⏸` deferred, `⊘` blocked
-- Refinement icons (supervised only): `~` raw, `◐` proposed, `◎` refined
+- Status icons: `○` raw, `◐` proposed, `◎` ready, `◑` in-progress, `●` done, `✕` cancelled, `⏸` deferred, `⊘` won't-fix, `⊗` blocked
 
 Each row shows the task ID only (no title). Use `domus task show <id>` for detail.
 

@@ -40,7 +40,11 @@ export async function writeTasks(
 // ── Computed queries ──────────────────────────────────────────────────────────
 
 export function doneIds(tasks: TaskEntry[]): Set<string> {
-  return new Set(tasks.filter((t) => t.status === "done").map((t) => t.id));
+  return new Set(
+    tasks
+      .filter((t) => t.status === "done" || t.status === "wont-fix")
+      .map((t) => t.id),
+  );
 }
 
 /** Active statuses that participate in ready/blocked checks */
