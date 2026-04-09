@@ -1,8 +1,9 @@
 # Task: Add won't-fix terminal status to domus
 
 **ID:** add-wont-fix-terminal-status-to-domus
-**Status:** raw
-**Autonomous:** false
+**Status:** done
+**Branch:** task/add-wont-fix-terminal-status-to-domus
+**Autonomous:** true
 **Priority:** normal
 **Captured:** 2026-04-09
 **Parent:** none
@@ -14,30 +15,49 @@
 
 ## What This Task Is
 
-Add a `won't-fix` terminal task status to domus. This is a domus tool change (not an everycent change). The won't-fix status represents a deliberate decision not to act on something — distinct from cancelled (which implies the task became irrelevant or was a mistake).
+Add a `wont-fix` terminal status to domus. The doctor skill needs a way to suppress known-accepted findings from re-surfacing on future runs. Currently there's no status that means "we looked at this and deliberately chose not to fix it." Cancelled implies the work was abandoned or became irrelevant — won't-fix captures an explicit decision to leave behavior as-is.
 
-Scope includes:
-- New CLI command to create tasks directly in won't-fix state
-- Workflow engine recognizing won't-fix as a terminal status (no further transitions except reopen)
-- Reopen transition: won't-fix → open (for when circumstances change)
-- Documentation updates
-
-**Boundary:** The capture-task skill (not the CLI) is responsible for knowing what detail to include in won't-fix task descriptions — the CLI is plumbing. The CLI just needs to support the status; the skill layer decides how to use it.
+**Not in scope:** Doctor skill integration, capture-task skill awareness — those are downstream consumers.
 
 ---
 
 ## Acceptance Criteria
 
-- [ ] `won't-fix` is a valid terminal status in the domus workflow engine
-- [ ] CLI supports creating a task directly in won't-fix state
-- [ ] CLI supports transitioning an existing task to won't-fix (from any active state)
-- [ ] Reopen from won't-fix works (won't-fix → open)
-- [ ] `domus task list` shows won't-fix tasks (with distinct indicator)
-- [ ] Won't-fix tasks do not appear in `domus task ready` output
-- [ ] Documentation reflects the new status and its transitions
+- [x] `wont-fix` is a valid terminal status in the workflow engine
+- [x] `wont-fix` is an escape hatch (reachable from any active state, same as cancel/defer)
+- [x] `domus task wontfix <id> [--note <text>]` transitions a task to `wont-fix` (new command, mirrors cancel.ts)
+- [x] `domus task add --wont-fix --title "..."` creates a task directly in `wont-fix` status (skips raw)
+- [x] Won't-fix task template omits Acceptance Criteria and Implementation Notes sections
+- [x] `domus task reopen <id>` works on won't-fix tasks (transitions to `raw`)
+- [x] `domus task list` excludes won't-fix tasks by default (same as done)
+- [x] `domus task list --wont-fix` includes won't-fix tasks alongside active tasks
+- [x] `domus task list --status wont-fix` shows only won't-fix tasks
+- [x] `domus task overview` excludes won't-fix tasks by default
+- [x] `domus task overview --wont-fix` includes won't-fix tasks
+- [x] Won't-fix gets `⊘` icon in display output
+- [x] `--help` output surfaces `wontfix` subcommand and `--wont-fix` flags with clear descriptions
+- [x] Won't-fix tasks do not count as active for dependency blocking
+- [x] `docs/cli-reference.md` updated
 
 ---
 
 ## Implementation Notes
 
-This is a prerequisite for the health check module's doctor skill. The doctor needs to check existing won't-fix tasks to suppress known, accepted findings from re-surfacing in future review runs. See `.domus/docs/specs/health-check-module-spec.md` open question 1.
+**Pattern:** Mirror `cancel.ts` / `defer.ts` for the new `wontfix.ts` command.
+
+**Files to touch (10):**
+
+| File | Change |
+|------|--------|
+| `src/lib/task-types.ts` | Add `"wont-fix"` to `TaskStatus` union and `VALID_STATUSES` |
+| `src/lib/state-engine.ts` | Add `"wont-fix"` to `ESCAPE_HATCHES`, add `"wont-fix": ["raw"]` to both transition maps |
+| `src/commands/task/wontfix.ts` | New file — mirror of `cancel.ts`, transitions to `"wont-fix"` |
+| `src/commands/task/add.ts` | Add `--wont-fix` flag that sets initial status to `"wont-fix"`, use minimal template (no AC/impl notes) |
+| `src/commands/task/index.ts` | Register `wontfix` subcommand, update `TASK_USAGE` help text |
+| `src/commands/task/list.ts` | Hide `wont-fix` by default (filter alongside `done`), add `--wont-fix` include flag |
+| `src/commands/task/overview.ts` | Exclude by default, add `--wont-fix` include flag |
+| `src/commands/task/display.ts` | Add `"wont-fix": "⊘"` to `STATUS_ICON` |
+| `src/commands/task/reopen.ts` | Verify — should work via transition map, no code change expected |
+| `docs/cli-reference.md` | Update status list, add wontfix command, document `--wont-fix` flags |
+
+**Single commit scope.**
