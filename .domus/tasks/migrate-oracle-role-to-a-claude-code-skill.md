@@ -1,7 +1,7 @@
 # Task: Migrate Oracle role to a Claude Code skill
 
 **ID:** migrate-oracle-role-to-a-claude-code-skill
-**Status:** raw
+**Status:** done
 **Autonomous:** false
 **Priority:** normal
 **Captured:** 2026-03-23

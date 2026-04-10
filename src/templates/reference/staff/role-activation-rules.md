@@ -1,6 +1,8 @@
 # Role Activation Rules
 
-Thin routing table for Butler. Load individual role files from `.domus/reference/staff/roles/` on demand — do not load all files at once.
+Thin routing table for Butler. See `staff.md` for the full registry of what roles exist. This file only covers how Butler activates them on demand.
+
+Roles implemented as skills (e.g. Oracle) self-activate via Claude Code's built-in skill logic and are not listed here.
 
 ## Interactive roles (load full role file when activated)
 
@@ -8,8 +10,6 @@ Thin routing table for Butler. Load individual role files from `.domus/reference
 |------|-----------|
 | Taskmaster | A task needs refinement (raw → proposed → ready) |
 | Doctor | Store health check requested, data consistency concerns |
-
-> **Migrated to skills:** Oracle — now handled by the `oracle` skill (idea exploration, capture, refinement). No role file loading needed.
 
 ## Always-present roles (thin trigger here, full role on demand)
 
