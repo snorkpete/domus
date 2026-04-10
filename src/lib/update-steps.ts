@@ -57,6 +57,9 @@ async function buildManagedFiles(): Promise<Record<string, string>> {
     ".domus/reference/agent-instructions.md": await Bun.file(
       new URL("../templates/reference/agent-instructions.md", import.meta.url),
     ).text(),
+    ".domus/reference/staff/staff.md": await Bun.file(
+      new URL("../templates/reference/staff/staff.md", import.meta.url),
+    ).text(),
     ".domus/reference/staff/role-activation-rules.md": await Bun.file(
       new URL(
         "../templates/reference/staff/role-activation-rules.md",
@@ -65,9 +68,6 @@ async function buildManagedFiles(): Promise<Record<string, string>> {
     ).text(),
     ".domus/reference/staff/roles/butler.md": await Bun.file(
       new URL("../templates/reference/staff/roles/butler.md", import.meta.url),
-    ).text(),
-    ".domus/reference/staff/roles/oracle.md": await Bun.file(
-      new URL("../templates/reference/staff/roles/oracle.md", import.meta.url),
     ).text(),
     ".domus/reference/staff/roles/herald.md": await Bun.file(
       new URL("../templates/reference/staff/roles/herald.md", import.meta.url),
