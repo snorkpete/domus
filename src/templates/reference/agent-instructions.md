@@ -93,6 +93,7 @@ Run `domus config set-branch [<branch>]` when the user explicitly mentions the d
 
 ## Staff — always-present roles
 
+@staff/staff.md
 @staff/role-activation-rules.md
 @staff/roles/butler.md
 @staff/roles/foreman.md
