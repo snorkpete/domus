@@ -1,12 +1,13 @@
 # Role Activation Rules
 
-Thin routing table for Butler. Load individual role files from `.domus/reference/staff/roles/` on demand — do not load all files at once.
+Thin routing table for Butler. See `staff.md` for the full registry of what roles exist. This file only covers how Butler activates them on demand.
+
+Roles implemented as skills (e.g. Oracle, Housekeeper) self-activate via Claude Code's built-in skill logic and are not listed here.
 
 ## Interactive roles (load full role file when activated)
 
 | Role | Load when |
 |------|-----------|
-| Oracle | Human has an idea to explore or articulate |
 | Taskmaster | A task needs refinement (raw → proposed → ready) |
 | Doctor | Store health check requested, data consistency concerns |
 
@@ -16,7 +17,7 @@ Thin routing table for Butler. Load individual role files from `.domus/reference
 |------|---------|
 | Butler | Auto-injected at session start. Routes to other roles based on intent |
 | Herald | Session start, "what's next", natural boundaries. Surfaces stalled tasks, undispatched ready tasks, cold ideas |
-| Foreman | "dispatch this task", pipeline management, merge and close. Routes tasks through execution engine |
+| Foreman | "dispatch this task", pipeline management, advance task status. Routes tasks through execution engine |
 
 ## Non-interactive
 

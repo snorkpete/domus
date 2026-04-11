@@ -25,6 +25,32 @@ Ideas with `status: raw` captured more than two weeks ago. These may need a deci
 ### Check 5: Anything unusual
 Missing files, empty indices, orphaned logs.
 
+### Check 6: Unmerged work awaiting landing
+
+Look for branches and worktrees that have been completed by Workers but not yet merged into the base branch.
+
+**Two sources, unioned and deduplicated by branch name:**
+
+1. **Parked worktrees:** `git worktree list --porcelain` — filter to non-main worktrees (skip the path that matches the repo root).
+2. **Unmerged branches:** `git branch --no-merged <base-branch>` — filter to branches matching the worker task-branch naming convention (e.g. `task/*`). This catches branches whose worktrees have been removed.
+
+Deduplicate by branch: a branch with a worktree shows once, with the worktree path included. A branch without a worktree shows with path = none.
+
+**For each entry, surface:** task ID (recoverable from branch name, e.g. `task/<id>` → `<id>`), branch name, worktree path (if any), and a lifecycle tag.
+
+**Lifecycle tags (cheap signals only):**
+
+| Tag | Detection rule |
+|-----|----------------|
+| `running` | A subagent is currently active for this task (cross-reference `TaskList` against the task ID). Do not prompt for action — it will resolve itself. |
+| `blocked` | The execution log's most recent entry starts with `Blocked:`. Worker stopped and needs human attention. |
+| `finished` | Execution log exists, worker logged a completion entry, no `Blocked:`, no active subagent. Default "ready for human eyes" state. |
+| `orphaned` | No execution log, log is stale (last entry > 7 days), or branch exists with no worktree and no recent activity. Probably abandoned — surface for investigation. |
+
+If a signal is ambiguous, fall back to `finished` (safe default — surfaces the item without making claims).
+
+**Surface as:** "[N] branch(es) awaiting merge" with a table per entry: task ID, branch, worktree path, tag.
+
 ## Briefing format
 
 ```
@@ -39,6 +65,9 @@ Missing files, empty indices, orphaned logs.
 
 **Cold ideas:** [count or "none"]
 [list if any]
+
+**Unmerged work:** [count or "none"]
+[table if any: task ID | branch | worktree | tag]
 
 **Other:** [anything unusual or "nothing"]
 
