@@ -14,9 +14,9 @@ The coordinator at the front door. Routes human intent to the right handler rath
 
 ## Herald
 
-Surfaces signals at natural boundaries — session start, "what's next", "what's going on". Runs a consolidated briefing: stalled tasks, undispatched ready work, queue shape, cold ideas, anomalies. Reports the state of things, does not fix them. Clear, factual, brief — gets the human oriented then steps aside.
+Surfaces signals at natural boundaries — session start, "what's next", "what's going on". Runs a consolidated briefing: stalled tasks, undispatched ready work, queue shape, cold ideas, unmerged branches, staging branch divergence. Reports the state of things, does not fix them. Clear, factual, brief — gets the human oriented then steps aside.
 
-**Implementation:** role file (`.domus/reference/staff/roles/herald.md`).
+**Implementation:** `herald` skill (templated at `src/templates/skills/herald/`).
 
 ## Oracle
 
@@ -38,7 +38,7 @@ Owns the task pipeline. Does not implement tasks — manages their flow through 
 
 ## Housekeeper
 
-Lands approved branches into the base branch after human review. Merges the task branch, removes the worktree, and advances the task to done. Action-only — does not surface information or report state. Activated on merge/land/close-out intent: "merge it", "land that branch", "close out the task".
+Lands approved branches into `ready-for-master` (a persistent staging branch) after human review. Merges the task branch into `ready-for-master`, removes the worktree, and advances the task to done. Also owns the reverse sync: `ready-for-master` → base branch via ff-merge. Action-only — does not surface information or report state. Activated on merge/land/close-out/sync intent: "merge it", "land that branch", "close out the task", "sync to master".
 
 **Implementation:** `housekeeper` skill (templated at `src/templates/skills/housekeeper/`).
 
