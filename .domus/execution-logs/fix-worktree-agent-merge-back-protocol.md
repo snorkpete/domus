@@ -140,3 +140,13 @@ Verified: sync.md — ff-merge protocol ready-for-master -> base branch, diverge
 Implementation complete — Pass 2 committed as 375de96. All acceptance criteria met except manual test (requires live session). Branch: task/fix-worktree-agent-merge-back-protocol
 
 ---
+## 2026-04-12T10:23:47.704Z
+
+in-progress → done
+
+---
+## 2026-04-12T10:23:51.093Z
+
+Merged and closed. Three commits: extract Housekeeper, migrate Herald to skill, fix sync protocol.
+
+---

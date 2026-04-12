@@ -1,7 +1,7 @@
 # Task: Fix worktree agent merge-back protocol
 
 **ID:** fix-worktree-agent-merge-back-protocol
-**Status:** in-progress
+**Status:** done
 **Branch:** task/fix-worktree-agent-merge-back-protocol
 **Autonomous:** true
 **Priority:** high
