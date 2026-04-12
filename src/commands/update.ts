@@ -1,10 +1,11 @@
-import { projectRoot } from "../lib/jsonl.ts";
+import { projectRoot, readDomusConfigSync } from "../lib/jsonl.ts";
 import {
   ensureAuditLog,
   ensureFolderStructure,
   mergeClaudeSettings,
   migrateIdeaSchema,
   migrateTaskSchema,
+  syncSkills,
   writeOwnedFiles,
 } from "../lib/update-steps.ts";
 
@@ -33,6 +34,12 @@ export async function runUpdate(
   // Merge Claude settings
   const { verb: settingsVerb } = await mergeClaudeSettings(projectPath);
 
+  // Sync skills — read config from cwd (not projectPath, which may be .domus/)
+  const skillsTarget = readDomusConfigSync(process.cwd())?.skillsTarget;
+  const skillResult = await syncSkills(projectPath, {
+    target: skillsTarget,
+  });
+
   // Migrate task schema
   const taskResult = await migrateTaskSchema(projectPath);
 
@@ -45,6 +52,16 @@ export async function runUpdate(
     console.log("Updated / created:");
     for (const f of allCreated) {
       console.log(`  + ${f}`);
+    }
+  }
+
+  if (skillResult.created.length > 0) {
+    const label = skillResult.targetDir.startsWith(projectPath)
+      ? "project"
+      : "user";
+    console.log(`  + Skills synced (${label} level):`);
+    for (const f of skillResult.created) {
+      console.log(`    ${f}`);
     }
   }
 

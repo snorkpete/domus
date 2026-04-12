@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, expect, test } from "bun:test";
-import { mkdtemp, rm } from "node:fs/promises";
+import { mkdtemp, realpath, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { version } from "../package.json";
@@ -131,8 +131,18 @@ afterEach(() => {
   }
 });
 
-test("projectRoot: returns cwd when DOMUS_ROOT is not set", () => {
-  expect(projectRoot()).toBe(resolve(process.cwd()));
+test("projectRoot: returns cwd when DOMUS_ROOT is not set and no config exists", async () => {
+  const tempDir = await realpath(
+    await mkdtemp(join(tmpdir(), "domus-projectroot-cwd-")),
+  );
+  const originalCwd = process.cwd();
+  try {
+    process.chdir(tempDir);
+    expect(projectRoot()).toBe(tempDir);
+  } finally {
+    process.chdir(originalCwd);
+    await rm(tempDir, { recursive: true });
+  }
 });
 
 test("projectRoot: returns DOMUS_ROOT when set", async () => {
