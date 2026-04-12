@@ -28,7 +28,7 @@ test("set-branch with explicit branch writes config.json", async () => {
     await readFile(join(tempDir, ".domus/config.json"), "utf-8"),
   );
   expect(config.branch).toBe("main");
-  expect(config.root).toBe(join(tempDir, ".domus"));
+  expect(config.root).toBe(tempDir);
 });
 
 test("set-branch with explicit branch prints confirmation", async () => {

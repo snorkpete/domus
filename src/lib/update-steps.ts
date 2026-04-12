@@ -6,8 +6,14 @@ import {
   realpath,
   writeFile,
 } from "node:fs/promises";
+import { homedir } from "node:os";
 import { join } from "node:path";
-import { DOMUS_DIR, readJsonl, writeJsonl } from "./jsonl.ts";
+import {
+  DOMUS_DIR,
+  readDomusConfigSync,
+  readJsonl,
+  writeJsonl,
+} from "./jsonl.ts";
 import type { DomusConfig } from "./jsonl.ts";
 import type { TaskEntry, TaskStatus } from "./task-types.ts";
 
@@ -158,6 +164,100 @@ export async function writeOwnedFiles(
   return { created, skipped };
 }
 
+// ── Skill syncing ────────────────────────────────────────────────────────────
+
+/**
+ * Dynamically discover skill templates and collect their files.
+ * Scans src/templates/skills/ for directories containing SKILL.md.
+ * Collects SKILL.md and all references/*.md files, skipping preferences.md.
+ */
+async function buildSkillFiles(): Promise<Record<string, string>> {
+  const files: Record<string, string> = {};
+  const skillsDir = new URL("../templates/skills/", import.meta.url);
+
+  let skillNames: string[];
+  try {
+    skillNames = await readdir(Bun.fileURLToPath(skillsDir));
+  } catch {
+    return files;
+  }
+
+  for (const skillName of skillNames) {
+    const skillDir = new URL(`${skillName}/`, skillsDir);
+    const skillMdUrl = new URL("SKILL.md", skillDir);
+    const skillMdFile = Bun.file(skillMdUrl);
+
+    if (!(await skillMdFile.exists())) {
+      continue;
+    }
+
+    files[`${skillName}/SKILL.md`] = await skillMdFile.text();
+
+    const refsDir = new URL("references/", skillDir);
+    let refEntries: string[];
+    try {
+      refEntries = await readdir(Bun.fileURLToPath(refsDir));
+    } catch {
+      continue;
+    }
+
+    for (const refFile of refEntries) {
+      if (!refFile.endsWith(".md") || refFile === "preferences.md") {
+        continue;
+      }
+      files[`${skillName}/references/${refFile}`] = await Bun.file(
+        new URL(refFile, refsDir),
+      ).text();
+    }
+  }
+
+  return files;
+}
+
+/**
+ * Resolve the target directory for skill installation.
+ * - "project" → <projectPath>/.claude/skills/
+ * - "user" → ~/.claude/skills/
+ * Reads from .domus/config.json skillsTarget field, defaulting to "project".
+ */
+function resolveSkillsTarget(
+  projectPath: string,
+  target?: "project" | "user",
+): string {
+  const resolved =
+    target ?? readDomusConfigSync(projectPath)?.skillsTarget ?? "project";
+  if (resolved === "user") {
+    return join(homedir(), ".claude", "skills");
+  }
+  return join(projectPath, ".claude", "skills");
+}
+
+/**
+ * Sync domus skill templates to the target directory.
+ * Always overwrites SKILL.md and references/*.md (domus-managed).
+ * Never touches preferences.md (user data).
+ */
+export async function syncSkills(
+  projectPath: string,
+  options: { target?: "project" | "user" } = {},
+): Promise<{ created: string[]; targetDir: string }> {
+  const created: string[] = [];
+  const targetDir = resolveSkillsTarget(projectPath, options.target);
+  const skillFiles = await buildSkillFiles();
+
+  for (const [relPath, content] of Object.entries(skillFiles)) {
+    const fullPath = join(targetDir, relPath);
+    const dir = join(fullPath, "..");
+    if (!existsSync(dir)) {
+      await mkdir(dir, { recursive: true });
+    }
+    await writeFile(fullPath, content, "utf-8");
+    created.push(relPath);
+  }
+
+  return { created, targetDir };
+}
+
 // ── Audit log ─────────────────────────────────────────────────────────────────
 
 export async function ensureAuditLog(projectPath: string): Promise<string[]> {
@@ -294,7 +394,7 @@ export async function setBranch(
   const domusRoot = join(projectPath, DOMUS_DIR);
   await mkdir(domusRoot, { recursive: true });
   const config: DomusConfig = {
-    root: domusRoot,
+    root: projectPath,
     branch: resolvedBranch,
   };
   await writeFile(
@@ -303,6 +403,34 @@ export async function setBranch(
     "utf-8",
   );
   return resolvedBranch;
+}
+
+// ── Config setters ───────────────────────────────────────────────────────────
+
+export async function setSkillsTarget(
+  projectPath: string,
+  target: "project" | "user",
+): Promise<void> {
+  // projectPath may already be the .domus/ dir (projectRoot() bug).
+  // Detect and avoid nesting.
+  const domusRoot = projectPath.endsWith(DOMUS_DIR)
+    ? projectPath
+    : join(projectPath, DOMUS_DIR);
+  await mkdir(domusRoot, { recursive: true });
+  const configPath = join(domusRoot, "config.json");
+
+  let config: DomusConfig = { root: projectPath, branch: "main" };
+  if (existsSync(configPath)) {
+    try {
+      const raw = await readFile(configPath, "utf-8");
+      config = JSON.parse(raw) as DomusConfig;
+    } catch {
+      // use default
+    }
+  }
+
+  config.skillsTarget = target;
+  await writeFile(configPath, `${JSON.stringify(config, null, 2)}\n`, "utf-8");
 }
 
 // ── Task schema migration ─────────────────────────────────────────────────────

@@ -174,18 +174,18 @@ test("writes .domus/config.json with root and branch fields", async () => {
   expect(existsSync(configPath)).toBe(true);
 
   const config = JSON.parse(await readFile(configPath, "utf-8"));
-  expect(config.root).toBe(join(tempDir, ".domus"));
+  expect(config.root).toBe(tempDir);
   expect(typeof config.branch).toBe("string");
   expect(config.branch.length).toBeGreaterThan(0);
 });
 
-test("config.json root points to .domus inside the project path", async () => {
+test("config.json root points to the project path", async () => {
   await runInit([], { projectPath: tempDir });
 
   const config = JSON.parse(
     await readFile(join(tempDir, ".domus/config.json"), "utf-8"),
   );
-  expect(config.root).toBe(join(tempDir, ".domus"));
+  expect(config.root).toBe(tempDir);
 });
 
 test("creates empty .domus/audit.jsonl", async () => {
