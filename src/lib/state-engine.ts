@@ -10,7 +10,8 @@ const ADVANCE_MAP: Partial<Record<TaskStatus, TaskStatus>> = {
   raw: "proposed",
   proposed: "ready",
   ready: "in-progress",
-  "in-progress": "done", // skips ready-for-senior-review in v0.0
+  "in-progress": "ready-for-senior-review",
+  "ready-for-senior-review": "done",
 };
 
 /**
@@ -22,7 +23,7 @@ const VALID_TRANSITIONS: Record<TaskStatus, TaskStatus[]> = {
   raw: ["proposed", ...ESCAPE_HATCHES],
   proposed: ["ready", ...ESCAPE_HATCHES],
   ready: ["in-progress", ...ESCAPE_HATCHES],
-  "in-progress": ["done", ...ESCAPE_HATCHES],
+  "in-progress": ["ready-for-senior-review", ...ESCAPE_HATCHES],
   "ready-for-senior-review": ["done", "in-progress", ...ESCAPE_HATCHES],
   done: ["raw"],
   cancelled: ["raw"],
