@@ -1,5 +1,6 @@
 import { projectRoot } from "../lib/jsonl.ts";
 import {
+  assertNotInsideDomus,
   ensureAuditLog,
   ensureFolderStructure,
   mergeClaudeSettings,
@@ -10,15 +11,36 @@ import {
 
 export { resolveDomusPermission };
 
+const USAGE = `
+domus init — initialise a .domus/ directory
+
+Usage:
+  domus init [--help]
+
+Creates the .domus/ directory structure, seed files, config.json (with current
+git branch), audit log, and merges .claude/settings.json. Safe to re-run —
+existing seed files are preserved.
+
+Options:
+  --help, -h    Print this help
+`.trim();
+
 type InitOptions = {
   projectPath?: string;
 };
 
 export async function runInit(
-  _args: string[],
+  args: string[],
   options: InitOptions = {},
 ): Promise<void> {
+  if (args.includes("--help") || args.includes("-h")) {
+    console.log(USAGE);
+    return;
+  }
+
   const projectPath = options.projectPath ?? projectRoot();
+  assertNotInsideDomus(projectPath);
+
   const created: string[] = [];
   const skipped: string[] = [];
 

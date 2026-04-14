@@ -7,7 +7,7 @@ import {
   writeFile,
 } from "node:fs/promises";
 import { homedir } from "node:os";
-import { join } from "node:path";
+import { join, resolve, sep } from "node:path";
 import {
   DOMUS_DIR,
   readDomusConfigSync,
@@ -16,6 +16,22 @@ import {
 } from "./jsonl.ts";
 import type { DomusConfig } from "./jsonl.ts";
 import type { TaskEntry, TaskStatus } from "./task-types.ts";
+
+// ── Nested .domus guard ───────────────────────────────────────────────────────
+
+/**
+ * Throws if `projectPath` is inside a `.domus/` directory.
+ * Prevents `domus init` from creating nested `.domus/.domus/` structures.
+ */
+export function assertNotInsideDomus(projectPath: string): void {
+  const absolute = resolve(projectPath);
+  const segments = absolute.split(sep);
+  if (segments.includes(".domus")) {
+    throw new Error(
+      `Cannot run \`domus init\` from inside an existing .domus/ directory (detected: ${absolute}).\nRun from the project root instead.`,
+    );
+  }
+}
 
 // ── Folder structure ──────────────────────────────────────────────────────────
 

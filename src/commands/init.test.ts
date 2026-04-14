@@ -246,3 +246,49 @@ test("config.json is overwritten on re-run with updated branch", async () => {
   // branch field exists and is a string
   expect(typeof config2.branch).toBe("string");
 });
+
+test("rejects when projectPath is a .domus/ directory", async () => {
+  const domusPath = join(tempDir, ".domus");
+  await mkdir(domusPath, { recursive: true });
+  await expect(runInit([], { projectPath: domusPath })).rejects.toThrow(
+    /\.domus/,
+  );
+  // Nothing should have been created inside .domus
+  const { readdir: readdirFn } = await import("node:fs/promises");
+  const entries = await readdirFn(domusPath);
+  expect(entries.length).toBe(0);
+});
+
+test("rejects when projectPath is a subdirectory of .domus/", async () => {
+  const tasksPath = join(tempDir, ".domus", "tasks");
+  await mkdir(tasksPath, { recursive: true });
+  await expect(runInit([], { projectPath: tasksPath })).rejects.toThrow(
+    /\.domus/,
+  );
+});
+
+test("--help prints usage and returns without creating files", async () => {
+  const logs: string[] = [];
+  const original = console.log;
+  console.log = (...a: unknown[]) => logs.push(a.join(" "));
+  try {
+    await runInit(["--help"], { projectPath: tempDir });
+  } finally {
+    console.log = original;
+  }
+  expect(logs.join("\n")).toContain("domus init");
+  expect(existsSync(join(tempDir, ".domus"))).toBe(false);
+});
+
+test("-h prints usage and returns without creating files", async () => {
+  const logs: string[] = [];
+  const original = console.log;
+  console.log = (...a: unknown[]) => logs.push(a.join(" "));
+  try {
+    await runInit(["-h"], { projectPath: tempDir });
+  } finally {
+    console.log = original;
+  }
+  expect(logs.join("\n")).toContain("domus init");
+  expect(existsSync(join(tempDir, ".domus"))).toBe(false);
+});
