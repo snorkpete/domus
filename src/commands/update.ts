@@ -9,14 +9,33 @@ import {
   writeOwnedFiles,
 } from "../lib/update-steps.ts";
 
+const USAGE = `
+domus update — update an existing .domus/ directory
+
+Usage:
+  domus update [--help]
+
+Overwrites managed template files (roles, reference, tags) with the latest
+versions, syncs skills, migrates task/idea schemas, and refreshes
+.claude/settings.json. Seed files (tasks.jsonl, ideas.jsonl) are never touched.
+
+Options:
+  --help, -h    Print this help
+`.trim();
+
 type UpdateOptions = {
   projectPath?: string;
 };
 
 export async function runUpdate(
-  _args: string[],
+  args: string[],
   options: UpdateOptions = {},
 ): Promise<void> {
+  if (args.includes("--help") || args.includes("-h")) {
+    console.log(USAGE);
+    return;
+  }
+
   const projectPath = options.projectPath ?? projectRoot();
 
   // Ensure folder structure exists

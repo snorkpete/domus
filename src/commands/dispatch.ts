@@ -2,7 +2,25 @@ import { projectRoot } from "../lib/jsonl.ts";
 import { readTasks } from "../lib/task-store.ts";
 import { runTask } from "./task/index.ts";
 
+const USAGE = `
+domus dispatch — dispatch a worker for a task
+
+Usage:
+  domus dispatch <task-id> [--help]
+
+Starts a task: transitions it to in-progress, creates its execution log,
+and records the worker branch. The task must be ready and autonomous.
+
+Options:
+  --help, -h    Print this help
+`.trim();
+
 export async function runDispatch(args: string[]): Promise<void> {
+  if (args.includes("--help") || args.includes("-h")) {
+    console.log(USAGE);
+    return;
+  }
+
   const taskId = args[0];
   if (!taskId || taskId.startsWith("-")) {
     console.error("Usage: domus dispatch <task-id>");

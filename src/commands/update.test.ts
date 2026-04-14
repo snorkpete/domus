@@ -3,41 +3,40 @@ import { existsSync } from "node:fs";
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { runDispatch } from "./dispatch.ts";
+import { runUpdate } from "./update.ts";
 
 let tempDir: string;
 
 beforeEach(async () => {
-  tempDir = await mkdtemp(join(tmpdir(), "domus-dispatch-test-"));
+  tempDir = await mkdtemp(join(tmpdir(), "domus-update-test-"));
 });
 
 afterEach(async () => {
   await rm(tempDir, { recursive: true, force: true });
 });
 
-test("--help prints usage and returns without side effects", async () => {
+test("--help prints usage and returns without creating files", async () => {
   const logs: string[] = [];
   const original = console.log;
   console.log = (...a: unknown[]) => logs.push(a.join(" "));
   try {
-    await runDispatch(["--help"]);
+    await runUpdate(["--help"], { projectPath: tempDir });
   } finally {
     console.log = original;
   }
-  expect(logs.join("\n")).toContain("domus dispatch");
-  // No .domus directory should have been created in the temp dir
+  expect(logs.join("\n")).toContain("domus update");
   expect(existsSync(join(tempDir, ".domus"))).toBe(false);
 });
 
-test("-h prints usage and returns without side effects", async () => {
+test("-h prints usage and returns without creating files", async () => {
   const logs: string[] = [];
   const original = console.log;
   console.log = (...a: unknown[]) => logs.push(a.join(" "));
   try {
-    await runDispatch(["-h"]);
+    await runUpdate(["-h"], { projectPath: tempDir });
   } finally {
     console.log = original;
   }
-  expect(logs.join("\n")).toContain("domus dispatch");
+  expect(logs.join("\n")).toContain("domus update");
   expect(existsSync(join(tempDir, ".domus"))).toBe(false);
 });
