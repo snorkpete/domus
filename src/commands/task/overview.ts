@@ -73,6 +73,7 @@ export async function cmdOverview(args: string[]): Promise<void> {
         readyTasks.push(t);
         break;
       case "in-progress":
+      case "ready-for-human-review":
       case "ready-for-senior-review":
         inProgressTasks.push(t);
         break;

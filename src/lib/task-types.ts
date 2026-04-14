@@ -5,6 +5,7 @@ export type TaskStatus =
   | "proposed"
   | "ready"
   | "in-progress"
+  | "ready-for-human-review"
   | "ready-for-senior-review"
   | "done"
   | "cancelled"
@@ -40,6 +41,7 @@ export const VALID_STATUSES: TaskStatus[] = [
   "proposed",
   "ready",
   "in-progress",
+  "ready-for-human-review",
   "ready-for-senior-review",
   "done",
   "cancelled",

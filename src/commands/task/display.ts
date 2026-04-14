@@ -23,6 +23,7 @@ export const STATUS_ICON: Record<TaskStatus | "blocked", string> = {
   proposed: "◐",
   ready: "◎",
   "in-progress": "◑",
+  "ready-for-human-review": "◉",
   "ready-for-senior-review": "⊙",
   done: "✔",
   cancelled: "✕",

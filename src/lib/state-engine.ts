@@ -10,8 +10,11 @@ const ADVANCE_MAP: Partial<Record<TaskStatus, TaskStatus>> = {
   raw: "proposed",
   proposed: "ready",
   ready: "in-progress",
-  "in-progress": "ready-for-senior-review",
-  "ready-for-senior-review": "done",
+  "in-progress": "ready-for-human-review",
+  "ready-for-human-review": "done",
+  // ready-for-senior-review is reserved for a future AI-review step. It is a
+  // valid status (reachable via the Doctor power tool) but not part of the
+  // advance flow yet.
 };
 
 /**
@@ -23,7 +26,8 @@ const VALID_TRANSITIONS: Record<TaskStatus, TaskStatus[]> = {
   raw: ["proposed", ...ESCAPE_HATCHES],
   proposed: ["ready", ...ESCAPE_HATCHES],
   ready: ["in-progress", ...ESCAPE_HATCHES],
-  "in-progress": ["ready-for-senior-review", ...ESCAPE_HATCHES],
+  "in-progress": ["ready-for-human-review", ...ESCAPE_HATCHES],
+  "ready-for-human-review": ["done", "in-progress", ...ESCAPE_HATCHES],
   "ready-for-senior-review": ["done", "in-progress", ...ESCAPE_HATCHES],
   done: ["raw"],
   cancelled: ["raw"],
@@ -39,7 +43,13 @@ const DOCTOR_TRANSITIONS: Record<TaskStatus, TaskStatus[]> = {
   raw: ["proposed", "ready", "in-progress", "done", ...ESCAPE_HATCHES],
   proposed: ["ready", "in-progress", "done", ...ESCAPE_HATCHES],
   ready: ["in-progress", "done", ...ESCAPE_HATCHES],
-  "in-progress": ["ready-for-senior-review", "done", ...ESCAPE_HATCHES],
+  "in-progress": [
+    "ready-for-human-review",
+    "ready-for-senior-review",
+    "done",
+    ...ESCAPE_HATCHES,
+  ],
+  "ready-for-human-review": ["done", "in-progress", ...ESCAPE_HATCHES],
   "ready-for-senior-review": ["done", "in-progress", ...ESCAPE_HATCHES],
   done: ["raw"],
   cancelled: ["raw"],

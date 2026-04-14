@@ -15,17 +15,19 @@ Task markdown files have two distinct parts — use the right tool for each:
 ## Task status lifecycle
 
 ```
-raw → proposed → ready → in-progress → ready-for-senior-review → done
+raw → proposed → ready → in-progress → ready-for-human-review → done
 ```
 
 - **raw** (`○`) — just captured, needs refinement
 - **proposed** (`◐`) — Claude has done a refinement pass (criteria written, shape clear) but the human hasn't reviewed yet
 - **ready** (`◎`) — human approved, waiting for dispatch
 - **in-progress** (`◑`) — being worked on
-- **ready-for-senior-review** (`⊙`) — Worker committed; awaiting human review and merge by Housekeeper
+- **ready-for-human-review** (`◉`) — Worker committed; awaiting human review and merge by Housekeeper
 - **done** (`●`) — merged into `ready-for-master` and closed
 
 Escape hatches from any state: `cancelled` (`✕`), `deferred` (`⏸`). Re-entry: `reopen` returns to `raw`.
+
+`ready-for-senior-review` (`⊙`) is reserved for a future AI-review step. It is a valid status reachable via the Doctor power tool, but not part of the advance flow yet.
 
 ### The `autonomous` flag
 

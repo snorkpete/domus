@@ -197,24 +197,24 @@ test("advance: ready → in-progress", async () => {
   expect(tasks[0].status).toBe("in-progress");
 });
 
-test("advance: in-progress → ready-for-senior-review", async () => {
+test("advance: in-progress → ready-for-human-review", async () => {
   await runTask(["add", "--title", "My Task"]);
   await runTask(["advance", "my-task"]); // raw → proposed
   await runTask(["advance", "my-task"]); // proposed → ready
   await runTask(["advance", "my-task"]); // ready → in-progress
-  await runTask(["advance", "my-task"]); // in-progress → ready-for-senior-review
+  await runTask(["advance", "my-task"]); // in-progress → ready-for-human-review
 
   const tasks = await readTasksJsonl();
-  expect(tasks[0].status).toBe("ready-for-senior-review");
+  expect(tasks[0].status).toBe("ready-for-human-review");
 });
 
-test("advance: ready-for-senior-review → done", async () => {
+test("advance: ready-for-human-review → done", async () => {
   await runTask(["add", "--title", "My Task"]);
   await runTask(["advance", "my-task"]); // raw → proposed
   await runTask(["advance", "my-task"]); // proposed → ready
   await runTask(["advance", "my-task"]); // ready → in-progress
-  await runTask(["advance", "my-task"]); // in-progress → ready-for-senior-review
-  await runTask(["advance", "my-task"]); // ready-for-senior-review → done
+  await runTask(["advance", "my-task"]); // in-progress → ready-for-human-review
+  await runTask(["advance", "my-task"]); // ready-for-human-review → done
 
   const tasks = await readTasksJsonl();
   expect(tasks[0].status).toBe("done");

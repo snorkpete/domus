@@ -55,7 +55,7 @@ domus task advance <task-id>
 domus task log <task-id> "Advanced: <reason>"
 ```
 
-Advance routes: `raw → proposed → ready → in-progress → ready-for-senior-review → done`.
+Advance routes: `raw → proposed → ready → in-progress → ready-for-human-review → done`.
 
 Always log when you advance. The log is the record of why the transition happened.
 
