@@ -24,16 +24,16 @@ Autonomous execution is a state machine. Domus owns the state transitions. Perso
 ### Task status lifecycle
 
 ```
-raw → proposed → ready → in-progress → [ready-for-senior-review →] done
+raw → proposed → ready → in-progress → [ready-for-senior-review →] ready-for-human-review → done
 ```
 
 - **raw** — just captured, needs refinement
 - **proposed** — Taskmaster has done a refinement pass (criteria written, shape clear) but the human hasn't reviewed yet
 - **ready** — human approved, waiting for dispatch
 - **in-progress** — active work is happening or has happened; resuming picks up here
-- **ready-for-senior-review** — implementation committed; senior reviewer persona checks code. Skipped by `advance` in v0.0 (goes directly to done).
-- **ready-for-manual-review** — human reviews; can approve (→ done) or send back (→ ready-for-senior-review). Not present in v0.0 — added in v0.1.
-- **done** — code merged
+- **ready-for-senior-review** — implementation committed; AI senior reviewer persona checks code. Reserved status — exists in code but not yet wired into `advance`. Will activate in v0.1.
+- **ready-for-human-review** — human reviews; can approve (→ done via Housekeeper merge) or send back (→ in-progress). The current human gate before merge.
+- **done** — code merged into `ready-for-master` and closed
 
 `cancelled` and `deferred` are available from any state as escape hatches. `reopen` returns cancelled/deferred tasks to `raw`.
 
@@ -54,13 +54,13 @@ The foreman is not a persona. It is a single skill with multiple capabilities.
 **Shared capabilities** — used by workers automatically, but also available to humans for supervised tasks:
 - **Route** — read task status and execution log, determine where the task stands, load the appropriate persona
   - `open` or `in-progress` → load executor persona (check execution log; resume if entries exist)
-  - `ready-for-senior-review` → load senior reviewer persona
-  - `ready-for-manual-review` → do nothing; await human action
+  - `ready-for-senior-review` → load senior reviewer persona (v0.1)
+  - `ready-for-human-review` → do nothing; await human action
 - **Advance** — "next state" trigger; transitions the task forward at natural checkpoints. Wraps the appropriate `domus task status` call so state and logs stay consistent.
 
 **Human-facing capabilities** — must be used by the human to ensure state and logs stay consistent:
-- **Send back** — transitions `ready-for-manual-review` → `ready-for-senior-review`
-- **Merge and close** — merges code and marks task done
+- **Send back** — transitions `ready-for-human-review` → `in-progress` (v0.1 will also support `ready-for-human-review` → `ready-for-senior-review`)
+- **Merge and close** — Housekeeper merges code and advances `ready-for-human-review` → `done`
 
 Adding a new execution phase means: new persona + update foreman routing + new status transition in domus. The surface area is intentionally small.
 

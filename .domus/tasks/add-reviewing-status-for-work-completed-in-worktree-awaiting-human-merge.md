@@ -1,7 +1,7 @@
 # Task: add reviewing status for work completed in worktree awaiting human merge
 
 **ID:** add-reviewing-status-for-work-completed-in-worktree-awaiting-human-merge
-**Status:** cancelled
+**Status:** done
 **Autonomous:** false
 **Priority:** normal
 **Captured:** 2026-03-16
