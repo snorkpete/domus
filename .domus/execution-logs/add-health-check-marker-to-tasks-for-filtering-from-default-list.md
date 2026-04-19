@@ -30,3 +30,13 @@ Completed: AC3-AC6 — shared filter helper in src/lib/task-filters.ts; list.ts 
 Completed: AC7 — 193 tests pass (0 fail); task-filters.test.ts covers all filter semantics; task.test.ts covers list/overview integration; update-steps.test.ts covers migration; init.test.ts checks seed
 
 ---
+## 2026-04-19T19:32:50.167Z
+
+in-progress → ready-for-human-review
+
+---
+## 2026-04-19T19:32:53.221Z
+
+Implementation complete — all criteria met
+
+---
