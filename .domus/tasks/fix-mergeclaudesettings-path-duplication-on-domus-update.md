@@ -1,7 +1,8 @@
 # Task: Fix mergeClaudeSettings PATH duplication on domus update
 
 **ID:** fix-mergeclaudesettings-path-duplication-on-domus-update
-**Status:** ready
+**Status:** done
+**Branch:** task/fix-mergeclaudesettings-path-duplication-on-domus-update
 **Autonomous:** true
 **Priority:** normal
 **Captured:** 2026-04-14
@@ -24,9 +25,9 @@
 
 ## Acceptance Criteria
 
-- [ ] Running `domus update` (or `domus init`) repeatedly produces a stable `env.PATH` — same value on second and subsequent runs.
-- [ ] Test: call `mergeClaudeSettings` twice in sequence with the same project path; assert the written PATH is identical after both calls.
-- [ ] No existing PATH entries are dropped (dedup preserves order, keeps first occurrence).
+- [x] Running `domus update` (or `domus init`) repeatedly produces a stable `env.PATH` — same value on second and subsequent runs.
+- [x] Test: call `mergeClaudeSettings` twice in sequence with the same project path; assert the written PATH is identical after both calls.
+- [x] No existing PATH entries are dropped (dedup preserves order, keeps first occurrence).
 
 ---
 
