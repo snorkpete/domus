@@ -1,5 +1,9 @@
 import { hasFlag, parseFlag } from "../../lib/args.ts";
-import { projectRoot } from "../../lib/jsonl.ts";
+import { projectRoot, readDomusConfigSync } from "../../lib/jsonl.ts";
+import {
+  parseCumulativeTagFlag,
+  taskPassesTagFilter,
+} from "../../lib/task-filters.ts";
 import { doneIds, isBlocked, readTasks } from "../../lib/task-store.ts";
 import type { TaskEntry, TaskPriority } from "../../lib/task-types.ts";
 import {
@@ -17,14 +21,24 @@ export async function cmdOverview(args: string[]): Promise<void> {
   const interval = parseFlag(args, "--interval");
 
   const root = projectRoot();
-  const tasks = await readTasks(root);
+  const allTasks = await readTasks(root);
 
-  if (tasks.length === 0) {
+  if (allTasks.length === 0) {
     console.log("No tasks found.");
     return;
   }
 
-  const done = doneIds(tasks);
+  // Tag filtering
+  const includeTags = parseCumulativeTagFlag(args, "--tag");
+  const excludeTags = parseCumulativeTagFlag(args, "--exclude-tag");
+  const config = readDomusConfigSync(root);
+  const defaultHiddenTags = config?.defaultHiddenTags ?? [];
+
+  const tasks = allTasks.filter((t) =>
+    taskPassesTagFilter(t, { includeTags, excludeTags, defaultHiddenTags }),
+  );
+
+  const done = doneIds(allTasks);
 
   // Group by status, then separate blocked
   const readyTasks: TaskEntry[] = [];
@@ -128,7 +142,7 @@ export async function cmdOverview(args: string[]): Promise<void> {
     group.sort(byPriority);
   }
 
-  const taskMap = new Map(tasks.map((t) => [t.id, t]));
+  const taskMap = new Map(allTasks.map((t) => [t.id, t]));
 
   // Order: Ready → In Progress → Proposed → Raw → Blocked → Done → Deferred → Cancelled → Won't Fix
   const sections: [string, TaskEntry[]][] = [

@@ -412,6 +412,7 @@ export async function setBranch(
   const config: DomusConfig = {
     root: projectPath,
     branch: resolvedBranch,
+    defaultHiddenTags: ["health-check"],
   };
   await writeFile(
     join(domusRoot, "config.json"),
@@ -583,4 +584,40 @@ export async function migrateIdeaSchema(_projectPath: string): Promise<{
   migrated: number;
 }> {
   return { migrated: 0 };
+}
+
+// ── Config: defaultHiddenTags migration ───────────────────────────────────────
+
+/**
+ * Add `defaultHiddenTags: ["health-check"]` to config.json if missing.
+ * Idempotent — does not overwrite if the field is already present.
+ * Returns true if the config was modified.
+ */
+export async function migrateDefaultHiddenTags(
+  projectPath: string,
+): Promise<boolean> {
+  const domusRoot = projectPath.endsWith(DOMUS_DIR)
+    ? projectPath
+    : join(projectPath, DOMUS_DIR);
+  const configPath = join(domusRoot, "config.json");
+
+  if (!existsSync(configPath)) {
+    return false;
+  }
+
+  let config: DomusConfig;
+  try {
+    const raw = await readFile(configPath, "utf-8");
+    config = JSON.parse(raw) as DomusConfig;
+  } catch {
+    return false;
+  }
+
+  if (config.defaultHiddenTags !== undefined) {
+    return false;
+  }
+
+  config.defaultHiddenTags = ["health-check"];
+  await writeFile(configPath, `${JSON.stringify(config, null, 2)}\n`, "utf-8");
+  return true;
 }

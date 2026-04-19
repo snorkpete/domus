@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, expect, test } from "bun:test";
 import { existsSync } from "node:fs";
-import { mkdtemp, readFile, rm } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { runTask } from "./task/index.ts";
@@ -1051,4 +1051,178 @@ test("overview: section order is Deferred after Done, Cancelled after Deferred",
   expect(doneIdx).toBeGreaterThanOrEqual(0);
   expect(deferredIdx).toBeGreaterThan(doneIdx);
   expect(cancelledIdx).toBeGreaterThan(deferredIdx);
+});
+
+// ── tag filtering (list + overview) ──────────────────────────────────────────
+
+async function writeDomusConfig(config: object): Promise<void> {
+  const domusDir = join(tempDir, ".domus");
+  await mkdir(domusDir, { recursive: true });
+  await writeFile(
+    join(domusDir, "config.json"),
+    `${JSON.stringify(config, null, 2)}\n`,
+    "utf-8",
+  );
+}
+
+test("list: health-check tasks are hidden by default when config sets defaultHiddenTags", async () => {
+  await writeDomusConfig({
+    root: tempDir,
+    branch: "main",
+    defaultHiddenTags: ["health-check"],
+  });
+  await runTask(["add", "--title", "Feature Task"]);
+  await runTask([
+    "add",
+    "--title",
+    "Health Check Task",
+    "--tags",
+    "health-check",
+  ]);
+
+  const out = captureOutput();
+  try {
+    await runTask(["list"]);
+  } finally {
+    out.restore();
+  }
+  const output = out.lines().join("\n");
+  expect(output).toContain("feature-task");
+  expect(output).not.toContain("health-check-task");
+});
+
+test("list: --tag health-check overrides config defaultHiddenTags", async () => {
+  await writeDomusConfig({
+    root: tempDir,
+    branch: "main",
+    defaultHiddenTags: ["health-check"],
+  });
+  await runTask(["add", "--title", "Feature Task"]);
+  await runTask([
+    "add",
+    "--title",
+    "Health Check Task",
+    "--tags",
+    "health-check",
+  ]);
+
+  const out = captureOutput();
+  try {
+    await runTask(["list", "--tag", "health-check"]);
+  } finally {
+    out.restore();
+  }
+  const output = out.lines().join("\n");
+  expect(output).not.toContain("feature-task");
+  expect(output).toContain("health-check-task");
+});
+
+test("list: --tag overrides --exclude-tag (include wins)", async () => {
+  await runTask(["add", "--title", "Alpha Task", "--tags", "alpha,beta"]);
+  await runTask(["add", "--title", "Beta Only Task", "--tags", "beta"]);
+
+  const out = captureOutput();
+  try {
+    await runTask(["list", "--tag", "alpha", "--exclude-tag", "beta"]);
+  } finally {
+    out.restore();
+  }
+  const output = out.lines().join("\n");
+  // alpha-task has alpha (include match) → shown even though it also has beta (would exclude)
+  expect(output).toContain("alpha-task");
+  // beta-only-task has beta (exclude, no include match) → hidden
+  expect(output).not.toContain("beta-only-task");
+});
+
+test("list: cumulative --tag flags match any", async () => {
+  await runTask(["add", "--title", "Alpha Task", "--tags", "alpha"]);
+  await runTask(["add", "--title", "Beta Task", "--tags", "beta"]);
+  await runTask(["add", "--title", "Gamma Task", "--tags", "gamma"]);
+
+  const out = captureOutput();
+  try {
+    await runTask(["list", "--tag", "alpha", "--tag", "beta"]);
+  } finally {
+    out.restore();
+  }
+  const output = out.lines().join("\n");
+  expect(output).toContain("alpha-task");
+  expect(output).toContain("beta-task");
+  expect(output).not.toContain("gamma-task");
+});
+
+test("list: task with no tags shown when --tag is empty", async () => {
+  await runTask(["add", "--title", "No Tag Task"]);
+
+  const out = captureOutput();
+  try {
+    await runTask(["list"]);
+  } finally {
+    out.restore();
+  }
+  expect(out.lines().join("\n")).toContain("no-tag-task");
+});
+
+test("list: task with no tags hidden when --tag is non-empty", async () => {
+  await runTask(["add", "--title", "No Tag Task"]);
+
+  const out = captureOutput();
+  try {
+    await runTask(["list", "--tag", "health-check"]);
+  } finally {
+    out.restore();
+  }
+  expect(out.lines().join("\n")).not.toContain("no-tag-task");
+});
+
+test("overview: health-check tasks are hidden by default when config sets defaultHiddenTags", async () => {
+  await writeDomusConfig({
+    root: tempDir,
+    branch: "main",
+    defaultHiddenTags: ["health-check"],
+  });
+  await runTask(["add", "--title", "Feature Task"]);
+  await runTask([
+    "add",
+    "--title",
+    "Health Check Task",
+    "--tags",
+    "health-check",
+  ]);
+
+  const out = captureOutput();
+  try {
+    await runTask(["overview"]);
+  } finally {
+    out.restore();
+  }
+  const output = stripAnsi(out.lines().join("\n"));
+  expect(output).toContain("feature-task");
+  expect(output).not.toContain("health-check-task");
+});
+
+test("overview: --tag health-check overrides config defaultHiddenTags", async () => {
+  await writeDomusConfig({
+    root: tempDir,
+    branch: "main",
+    defaultHiddenTags: ["health-check"],
+  });
+  await runTask(["add", "--title", "Feature Task"]);
+  await runTask([
+    "add",
+    "--title",
+    "Health Check Task",
+    "--tags",
+    "health-check",
+  ]);
+
+  const out = captureOutput();
+  try {
+    await runTask(["overview", "--tag", "health-check"]);
+  } finally {
+    out.restore();
+  }
+  const output = stripAnsi(out.lines().join("\n"));
+  expect(output).toContain("health-check-task");
+  expect(output).not.toContain("feature-task");
 });

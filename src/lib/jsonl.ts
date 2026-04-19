@@ -14,6 +14,7 @@ export type DomusConfig = {
   root: string;
   branch: string;
   skillsTarget?: "project" | "user";
+  defaultHiddenTags?: string[];
 };
 
 /**
