@@ -3,6 +3,7 @@ import {
   ensureAuditLog,
   ensureFolderStructure,
   mergeClaudeSettings,
+  migrateDefaultHiddenTags,
   migrateIdeaSchema,
   migrateTaskSchema,
   syncSkills,
@@ -65,6 +66,9 @@ export async function runUpdate(
   // Migrate idea schema (no-op for now)
   const ideaResult = await migrateIdeaSchema(projectPath);
 
+  // Migrate config: add defaultHiddenTags if missing
+  const configMigrated = await migrateDefaultHiddenTags(projectPath);
+
   // Report
   const allCreated = [...createdDirs, ...ownedCreated, ...createdAudit];
   if (allCreated.length > 0) {
@@ -98,5 +102,13 @@ export async function runUpdate(
     console.log(`  ✓ Ideas migrated: ${ideaResult.migrated} record(s)`);
   } else {
     console.log("  · Ideas: already on current schema (no migration needed)");
+  }
+
+  if (configMigrated) {
+    console.log('  ✓ Config: added defaultHiddenTags: ["health-check"]');
+  } else {
+    console.log(
+      "  · Config: defaultHiddenTags already set (no migration needed)",
+    );
   }
 }

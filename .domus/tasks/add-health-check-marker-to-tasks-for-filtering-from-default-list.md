@@ -1,7 +1,8 @@
 # Task: Add health-check marker to tasks for filtering from default list
 
 **ID:** add-health-check-marker-to-tasks-for-filtering-from-default-list
-**Status:** ready
+**Status:** ready-for-human-review
+**Branch:** task/add-health-check-marker-to-tasks-for-filtering-from-default-list
 **Autonomous:** true
 **Priority:** normal
 **Captured:** 2026-04-13
@@ -42,15 +43,15 @@ Scope note: no new schema field. Tasks already have `tags: string[]`. This task 
 
 ## Acceptance Criteria
 
-- [ ] `.domus/config.json` supports `defaultHiddenTags: string[]`. `domus init` seeds it with `["health-check"]`. `config.ts` loader reads it; missing field defaults to `[]`.
-- [ ] `domus update` migrates existing projects: if `defaultHiddenTags` is missing from an existing `config.json`, add it with `["health-check"]`. If present, leave it alone (don't clobber user edits).
-- [ ] `task list` and `task overview` both support `--tag <t>` and `--exclude-tag <t>`, cumulative (repeatable or comma-separated).
-- [ ] Filter semantics:
+- [x] `.domus/config.json` supports `defaultHiddenTags: string[]`. `domus init` seeds it with `["health-check"]`. `config.ts` loader reads it; missing field defaults to `[]`.
+- [x] `domus update` migrates existing projects: if `defaultHiddenTags` is missing from an existing `config.json`, add it with `["health-check"]`. If present, leave it alone (don't clobber user edits).
+- [x] `task list` and `task overview` both support `--tag <t>` and `--exclude-tag <t>`, cumulative (repeatable or comma-separated).
+- [x] Filter semantics:
   - If `--tag` set is non-empty: task shows iff it has at least one tag in the `--tag` set. Exclude rules are ignored for include-matches.
   - If `--tag` set is empty: task is hidden iff it has at least one tag in the effective exclude set (CLI `--exclude-tag` ∪ config `defaultHiddenTags`). Otherwise shown.
-- [ ] Filter logic is extracted into a shared helper (e.g. `src/commands/task/helpers.ts` or `src/lib/task-filters.ts`) used by both `list` and `overview`.
-- [ ] `health-check` tag is hidden from the default `task list` / `overview` output. Running `task list --tag health-check` surfaces them.
-- [ ] Tests cover: default hiding via config, `--tag` overrides config hiding, `--tag` overrides CLI `--exclude-tag` (include > exclude), cumulative flags, and a task with no tags (shown when `--tag` is empty, hidden when `--tag` is non-empty).
+- [x] Filter logic is extracted into a shared helper (e.g. `src/commands/task/helpers.ts` or `src/lib/task-filters.ts`) used by both `list` and `overview`.
+- [x] `health-check` tag is hidden from the default `task list` / `overview` output. Running `task list --tag health-check` surfaces them.
+- [x] Tests cover: default hiding via config, `--tag` overrides config hiding, `--tag` overrides CLI `--exclude-tag` (include > exclude), cumulative flags, and a task with no tags (shown when `--tag` is empty, hidden when `--tag` is non-empty).
 
 ---
 

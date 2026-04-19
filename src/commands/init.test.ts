@@ -177,6 +177,7 @@ test("writes .domus/config.json with root and branch fields", async () => {
   expect(config.root).toBe(tempDir);
   expect(typeof config.branch).toBe("string");
   expect(config.branch.length).toBeGreaterThan(0);
+  expect(config.defaultHiddenTags).toEqual(["health-check"]);
 });
 
 test("config.json root points to the project path", async () => {

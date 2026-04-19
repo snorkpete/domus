@@ -3,7 +3,11 @@ import { existsSync } from "node:fs";
 import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { migrateIdeaSchema, migrateTaskSchema } from "./update-steps.ts";
+import {
+  migrateDefaultHiddenTags,
+  migrateIdeaSchema,
+  migrateTaskSchema,
+} from "./update-steps.ts";
 
 let tempDir: string;
 
@@ -203,4 +207,71 @@ test("does not touch tasks.jsonl markdown file itself", async () => {
 test("migrateIdeaSchema is a no-op and returns migrated:0", async () => {
   const result = await migrateIdeaSchema(tempDir);
   expect(result.migrated).toBe(0);
+});
+
+// ── migrateDefaultHiddenTags ──────────────────────────────────────────────────
+
+async function writeConfig(obj: object): Promise<void> {
+  const configDir = join(tempDir, ".domus");
+  await mkdir(configDir, { recursive: true });
+  await writeFile(
+    join(configDir, "config.json"),
+    `${JSON.stringify(obj, null, 2)}\n`,
+    "utf-8",
+  );
+}
+
+async function readConfig(): Promise<Record<string, unknown>> {
+  const raw = await readFile(join(tempDir, ".domus", "config.json"), "utf-8");
+  return JSON.parse(raw);
+}
+
+test("migrateDefaultHiddenTags: adds defaultHiddenTags when missing", async () => {
+  await writeConfig({ root: tempDir, branch: "main" });
+
+  const migrated = await migrateDefaultHiddenTags(tempDir);
+
+  expect(migrated).toBe(true);
+  const config = await readConfig();
+  expect(config.defaultHiddenTags).toEqual(["health-check"]);
+});
+
+test("migrateDefaultHiddenTags: does not overwrite existing defaultHiddenTags", async () => {
+  await writeConfig({
+    root: tempDir,
+    branch: "main",
+    defaultHiddenTags: ["custom-tag"],
+  });
+
+  const migrated = await migrateDefaultHiddenTags(tempDir);
+
+  expect(migrated).toBe(false);
+  const config = await readConfig();
+  expect(config.defaultHiddenTags).toEqual(["custom-tag"]);
+});
+
+test("migrateDefaultHiddenTags: does not overwrite empty array", async () => {
+  await writeConfig({ root: tempDir, branch: "main", defaultHiddenTags: [] });
+
+  const migrated = await migrateDefaultHiddenTags(tempDir);
+
+  expect(migrated).toBe(false);
+  const config = await readConfig();
+  expect(config.defaultHiddenTags).toEqual([]);
+});
+
+test("migrateDefaultHiddenTags: returns false if config.json does not exist", async () => {
+  const migrated = await migrateDefaultHiddenTags(tempDir);
+  expect(migrated).toBe(false);
+});
+
+test("migrateDefaultHiddenTags: idempotent — second run does nothing", async () => {
+  await writeConfig({ root: tempDir, branch: "main" });
+
+  await migrateDefaultHiddenTags(tempDir);
+  const migrated2 = await migrateDefaultHiddenTags(tempDir);
+
+  expect(migrated2).toBe(false);
+  const config = await readConfig();
+  expect(config.defaultHiddenTags).toEqual(["health-check"]);
 });
