@@ -374,7 +374,8 @@ export async function mergeClaudeSettings(
   const existingAllow = settings.permissions?.allow ?? [];
   const mergedAllow = [...new Set([...existingAllow, ...dynamicPermissions])];
   settings.permissions = { ...settings.permissions, allow: mergedAllow };
-  settings.env = { ...settings.env, PATH: envPath };
+  const dedupedPath = [...new Set(envPath.split(":"))].join(":");
+  settings.env = { ...settings.env, PATH: dedupedPath };
 
   await writeFile(
     settingsPath,

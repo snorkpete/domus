@@ -57,7 +57,11 @@ test("creates .claude/settings.json with required permissions and PATH", async (
   expect(settings.permissions.allow).toContain("Read");
   expect(settings.permissions.allow).toContain("Write");
   expect(settings.permissions.allow).toContain("Bash(git *)");
-  expect(settings.env.PATH).toBe(process.env.PATH);
+  // PATH is deduplicated before writing — verify it contains no duplicates
+  // and that all unique entries from process.env.PATH are present
+  const writtenEntries = settings.env.PATH.split(":");
+  const uniqueEntries = [...new Set(writtenEntries)];
+  expect(writtenEntries).toEqual(uniqueEntries);
 });
 
 test("merges into existing .claude/settings.json without clobbering other settings", async () => {

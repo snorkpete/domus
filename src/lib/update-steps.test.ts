@@ -4,6 +4,7 @@ import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
+  mergeClaudeSettings,
   migrateDefaultHiddenTags,
   migrateIdeaSchema,
   migrateTaskSchema,
@@ -274,4 +275,70 @@ test("migrateDefaultHiddenTags: idempotent — second run does nothing", async (
   expect(migrated2).toBe(false);
   const config = await readConfig();
   expect(config.defaultHiddenTags).toEqual(["health-check"]);
+});
+
+// ── mergeClaudeSettings: PATH deduplication ───────────────────────────────────
+
+async function claudeSettingsPath(): Promise<string> {
+  return join(tempDir, ".claude", "settings.json");
+}
+
+async function readClaudeSettings(): Promise<Record<string, unknown>> {
+  const raw = await readFile(await claudeSettingsPath(), "utf-8");
+  return JSON.parse(raw);
+}
+
+test("mergeClaudeSettings: writes a stable PATH on the first run", async () => {
+  const originalPath = process.env.PATH;
+  process.env.PATH = "/usr/bin:/bin";
+
+  try {
+    await mergeClaudeSettings(tempDir);
+    const settings = await readClaudeSettings();
+    const env = settings.env as Record<string, string>;
+    expect(env.PATH).toBe("/usr/bin:/bin");
+  } finally {
+    process.env.PATH = originalPath;
+  }
+});
+
+test("mergeClaudeSettings: PATH is identical on second run (no duplication)", async () => {
+  // Simulate the first run writing entries into settings.json
+  const originalPath = process.env.PATH;
+  process.env.PATH = "/usr/local/bin:/usr/bin:/bin";
+
+  try {
+    await mergeClaudeSettings(tempDir);
+    const settingsAfterFirst = await readClaudeSettings();
+    const pathAfterFirst = (settingsAfterFirst.env as Record<string, string>)
+      .PATH;
+
+    // Simulate a second run where Claude Code has injected the written PATH
+    // into process.env.PATH, prepending it again — creating duplicates
+    process.env.PATH = `${pathAfterFirst}:${pathAfterFirst}`;
+
+    await mergeClaudeSettings(tempDir);
+    const settingsAfterSecond = await readClaudeSettings();
+    const pathAfterSecond = (settingsAfterSecond.env as Record<string, string>)
+      .PATH;
+
+    expect(pathAfterSecond).toBe(pathAfterFirst);
+  } finally {
+    process.env.PATH = originalPath;
+  }
+});
+
+test("mergeClaudeSettings: deduplication preserves order, keeps first occurrence", async () => {
+  const originalPath = process.env.PATH;
+  // PATH with deliberate duplicates: /usr/bin appears twice
+  process.env.PATH = "/usr/local/bin:/usr/bin:/bin:/usr/bin:/usr/local/bin";
+
+  try {
+    await mergeClaudeSettings(tempDir);
+    const settings = await readClaudeSettings();
+    const env = settings.env as Record<string, string>;
+    expect(env.PATH).toBe("/usr/local/bin:/usr/bin:/bin");
+  } finally {
+    process.env.PATH = originalPath;
+  }
 });
