@@ -1,7 +1,7 @@
 # Idea: Human-in-the-loop pre-requisites as a first-class refinement concept
 
 **Captured:** 2026-03-15
-**Status:** raw
+**Status:** abandoned
 
 ---
 

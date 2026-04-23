@@ -1,7 +1,7 @@
 # Idea: Epic with subtasks as standard pattern for dependency tracking
 
 **Captured:** 2026-03-19
-**Status:** raw
+**Status:** abandoned
 
 ---
 

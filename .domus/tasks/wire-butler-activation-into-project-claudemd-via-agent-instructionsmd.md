@@ -1,7 +1,7 @@
 # Task: Wire Butler activation into project CLAUDE.md via agent-instructions.md
 
 **ID:** wire-butler-activation-into-project-claudemd-via-agent-instructionsmd
-**Status:** raw
+**Status:** cancelled
 **Autonomous:** false
 **Priority:** normal
 **Captured:** 2026-03-21

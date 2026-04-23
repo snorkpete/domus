@@ -1,7 +1,7 @@
 # Idea: Track worker branch on task during execution
 
 **Captured:** 2026-03-15
-**Status:** raw
+**Status:** abandoned
 
 ---
 

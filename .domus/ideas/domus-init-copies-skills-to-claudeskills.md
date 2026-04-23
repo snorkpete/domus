@@ -1,7 +1,7 @@
 # Idea: domus init copies skills to ~/.claude/skills/
 
 **Captured:** 2026-03-15
-**Status:** raw
+**Status:** abandoned
 
 ---
 

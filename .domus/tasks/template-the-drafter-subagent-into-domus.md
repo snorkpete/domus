@@ -1,7 +1,7 @@
 # Task: Template the drafter subagent into domus
 
 **ID:** template-the-drafter-subagent-into-domus
-**Status:** raw
+**Status:** deferred
 **Autonomous:** false
 **Priority:** normal
 **Captured:** 2026-04-10

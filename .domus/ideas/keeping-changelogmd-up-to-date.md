@@ -1,7 +1,7 @@
 # Idea: Keeping CHANGELOG.md up to date
 
 **Captured:** 2026-03-15
-**Status:** raw
+**Status:** deferred
 
 ---
 

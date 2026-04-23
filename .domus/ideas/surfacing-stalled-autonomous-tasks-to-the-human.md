@@ -1,7 +1,7 @@
 # Idea: Surfacing stalled autonomous tasks to the human
 
 **Captured:** 2026-03-15
-**Status:** raw
+**Status:** abandoned
 
 ---
 

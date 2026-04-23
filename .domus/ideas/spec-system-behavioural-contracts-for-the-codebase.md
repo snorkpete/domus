@@ -1,7 +1,7 @@
 # Idea: Spec system - behavioural contracts for the codebase
 
 **Captured:** 2026-03-14
-**Status:** raw
+**Status:** deferred
 
 ---
 

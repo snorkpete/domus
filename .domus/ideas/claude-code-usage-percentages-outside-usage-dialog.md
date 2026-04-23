@@ -1,7 +1,7 @@
 # Idea: Claude Code usage percentages outside /usage dialog
 
 **Captured:** 2026-03-15
-**Status:** raw
+**Status:** abandoned
 
 ---
 

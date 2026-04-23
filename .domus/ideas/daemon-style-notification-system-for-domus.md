@@ -1,7 +1,7 @@
 # Idea: Daemon-style notification system for domus
 
 **Captured:** 2026-03-18
-**Status:** raw
+**Status:** deferred
 
 ---
 

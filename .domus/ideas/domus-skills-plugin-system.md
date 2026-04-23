@@ -1,7 +1,7 @@
 # Idea: Domus Skills Plugin System
 
 **Captured:** 2026-03-14
-**Status:** raw
+**Status:** abandoned
 
 ---
 

@@ -1,7 +1,7 @@
 # Idea: ADR support in the spec system
 
 **Captured:** 2026-03-14
-**Status:** raw
+**Status:** abandoned
 
 ---
 

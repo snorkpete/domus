@@ -1,7 +1,7 @@
 # Task: Add task-execution workflow instructions to CLAUDE.md
 
 **ID:** add-task-execution-workflow-instructions-to-claudemd
-**Status:** raw
+**Status:** cancelled
 **Autonomous:** false
 **Priority:** normal
 **Captured:** 2026-03-21

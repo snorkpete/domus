@@ -1,7 +1,7 @@
 # Idea: Session orientation - how does a new session know what to do next
 
 **Captured:** 2026-03-14
-**Status:** raw
+**Status:** abandoned
 
 ---
 

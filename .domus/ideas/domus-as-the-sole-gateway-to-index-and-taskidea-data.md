@@ -1,7 +1,7 @@
 # Idea: Domus as the sole gateway to index and task/idea data
 
 **Captured:** 2026-03-14
-**Status:** raw
+**Status:** abandoned
 
 ---
 

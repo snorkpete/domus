@@ -1,7 +1,7 @@
 # Idea: Domus codebase architecture document
 
 **Captured:** 2026-03-14
-**Status:** raw
+**Status:** deferred
 
 ---
 

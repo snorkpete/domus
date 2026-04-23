@@ -1,7 +1,7 @@
 # Idea: Taskmaster refinement sessions use question-framing for feedback
 
 **Captured:** 2026-03-19
-**Status:** raw
+**Status:** abandoned
 
 ---
 

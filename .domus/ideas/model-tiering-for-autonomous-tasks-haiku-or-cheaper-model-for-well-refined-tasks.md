@@ -1,7 +1,7 @@
 # Idea: Model tiering for autonomous tasks — haiku or cheaper model for well-refined tasks
 
 **Captured:** 2026-03-17
-**Status:** raw
+**Status:** deferred
 
 ---
 

@@ -1,7 +1,7 @@
 # Idea: Context alignment checker — keep session context reflecting current reality
 
 **Captured:** 2026-03-17
-**Status:** raw
+**Status:** abandoned
 
 ---
 

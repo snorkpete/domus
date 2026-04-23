@@ -1,7 +1,7 @@
 # Task: Support resuming in-progress tasks via domus dispatch
 
 **ID:** support-resuming-in-progress-tasks-via-domus-dispatch
-**Status:** raw
+**Status:** deferred
 **Autonomous:** false
 **Priority:** normal
 **Captured:** 2026-03-21

@@ -1,7 +1,7 @@
 # Idea: Parallelise session recap with specialised subagents
 
 **Captured:** 2026-03-17
-**Status:** raw
+**Status:** deferred
 
 ---
 

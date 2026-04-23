@@ -1,7 +1,7 @@
 # Idea: Memory portability — move session memory into the repo alongside tasks and decisions
 
 **Captured:** 2026-03-17
-**Status:** raw
+**Status:** abandoned
 
 ---
 

@@ -1,7 +1,7 @@
 # Idea: CLI surface for housekeeper status
 
 **Captured:** 2026-04-11
-**Status:** raw
+**Status:** abandoned
 
 ---
 

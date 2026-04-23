@@ -1,7 +1,7 @@
 # Idea: Periodic automated cleanup of completed tasks and ideas
 
 **Captured:** 2026-03-14
-**Status:** raw
+**Status:** abandoned
 
 ---
 

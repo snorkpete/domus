@@ -1,7 +1,7 @@
 # Idea: Control worker agent branch names
 
 **Captured:** 2026-03-18
-**Status:** raw
+**Status:** abandoned
 
 ---
 

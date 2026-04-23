@@ -1,7 +1,7 @@
 # Idea: Standardize idea MD file format to match task MD conventions
 
 **Captured:** 2026-03-14
-**Status:** raw
+**Status:** deferred
 
 ---
 

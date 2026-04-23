@@ -1,7 +1,7 @@
 # Idea: Execution state convention in task bodies
 
 **Captured:** 2026-03-15
-**Status:** raw
+**Status:** abandoned
 
 ---
 

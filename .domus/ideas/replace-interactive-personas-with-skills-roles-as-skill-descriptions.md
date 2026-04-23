@@ -1,7 +1,7 @@
 # Idea: Replace interactive personas with skills — roles as skill descriptions
 
 **Captured:** 2026-03-22
-**Status:** raw
+**Status:** abandoned
 
 ---
 

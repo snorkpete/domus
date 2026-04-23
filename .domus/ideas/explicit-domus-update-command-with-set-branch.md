@@ -1,7 +1,7 @@
 # Idea: Explicit domus update command with set-branch
 
 **Captured:** 2026-03-21
-**Status:** raw
+**Status:** abandoned
 
 ---
 

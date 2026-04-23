@@ -1,7 +1,7 @@
 # Task: Wire domus staff roles into Claude Code via skills
 
 **ID:** wire-domus-staff-roles-into-claude-code-via-skills
-**Status:** raw
+**Status:** cancelled
 **Autonomous:** false
 **Priority:** normal
 **Captured:** 2026-03-25

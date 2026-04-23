@@ -1,7 +1,7 @@
 # Task: Add domus vision framing to project CLAUDE.md
 
 **ID:** add-domus-vision-framing-to-project-claudemd
-**Status:** raw
+**Status:** deferred
 **Autonomous:** false
 **Priority:** normal
 **Captured:** 2026-03-25

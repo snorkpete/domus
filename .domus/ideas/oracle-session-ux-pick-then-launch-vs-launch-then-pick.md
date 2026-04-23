@@ -1,7 +1,7 @@
 # Idea: Oracle session UX: pick-then-launch vs launch-then-pick
 
 **Captured:** 2026-03-14
-**Status:** raw
+**Status:** abandoned
 
 ---
 

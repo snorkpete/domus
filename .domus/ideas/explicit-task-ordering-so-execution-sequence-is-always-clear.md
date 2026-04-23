@@ -1,7 +1,7 @@
 # Idea: explicit task ordering so execution sequence is always clear
 
 **Captured:** 2026-03-16
-**Status:** raw
+**Status:** deferred
 
 ---
 
