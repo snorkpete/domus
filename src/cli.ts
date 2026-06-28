@@ -2,6 +2,7 @@
 import { version } from "../package.json";
 import { runConfig } from "./commands/config.ts";
 import { runDispatch } from "./commands/dispatch.ts";
+import { runHealth } from "./commands/health.ts";
 import { runIdea } from "./commands/idea.ts";
 import { runInit } from "./commands/init.ts";
 import { runTask } from "./commands/task/index.ts";
@@ -14,6 +15,7 @@ const USAGE = `
 Domus — per-project workflow tool
 
 Usage:
+  domus health                   Show health-check tasks (domus health --help)
   domus idea                     Manage ideas (domus idea --help)
   domus init                     Initialise a .domus/ directory
   domus update                   Update an existing .domus/ directory and migrate schemas
@@ -43,6 +45,10 @@ async function main() {
     case "--help":
     case "-h":
       console.log(USAGE);
+      break;
+
+    case "health":
+      await runHealth(args.slice(1));
       break;
 
     case "idea":
