@@ -3,3 +3,8 @@ dist/
 tmp/
 .idea/
 .claude/worktrees/
+
+# Secrets — never commit credentials or keys
+.env*
+*.pem
+*.key
