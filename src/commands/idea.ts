@@ -22,6 +22,19 @@ import {
   updateMarkdownStatus,
 } from "../lib/jsonl.ts";
 import { updateMarkdownTitle, updateSection } from "../lib/markdown.ts";
+import { ansi, sectionHeader } from "./task/display.ts";
+
+// ── Icon map ──────────────────────────────────────────────────────────────────
+
+const IDEA_STATUS_ICON: Record<IdeaStatus, string> = {
+  raw: "○",
+  refined: "◑",
+  scoped: "◕",
+  implemented: "●",
+  abandoned: "✕",
+  deferred: "⏸",
+};
+
 // ── Subcommands ──────────────────────────────────────────────────────────────
 
 async function cmdAdd(args: string[]): Promise<void> {
@@ -215,35 +228,44 @@ async function cmdOverview(args: string[]): Promise<void> {
     return;
   }
 
+  const fmt = (i: IdeaEntry) =>
+    `  ${IDEA_STATUS_ICON[i.status] ?? "?"} ${ansi("36", i.id)}`;
+
+  const printSection = (label: string, items: IdeaEntry[]) => {
+    if (items.length === 0) {
+      return;
+    }
+    console.log(sectionHeader(label));
+    console.log();
+    for (const i of items) {
+      console.log(fmt(i));
+      if (i.summary || i.title) {
+        console.log(`    ${i.summary || i.title}`);
+      }
+      console.log();
+    }
+  };
+
   if (filter === "active") {
     const raw = filtered.filter((i) => i.status === "raw");
     const refined = filtered.filter((i) => i.status === "refined");
     const scoped = filtered.filter((i) => i.status === "scoped");
 
-    const fmt = (i: IdeaEntry) => `  ${i.id}\n    ${i.summary || i.title}`;
-
-    if (raw.length > 0) {
-      console.log("## Needs Refinement (raw)\n");
-      raw.forEach((i) => console.log(fmt(i)));
-      console.log();
-    }
-    if (refined.length > 0) {
-      console.log("## Ready to Scope (refined)\n");
-      refined.forEach((i) => console.log(fmt(i)));
-      console.log();
-    }
-    if (scoped.length > 0) {
-      console.log("## Tasked (scoped)\n");
-      scoped.forEach((i) => console.log(fmt(i)));
-      console.log();
-    }
+    printSection("Needs Refinement", raw);
+    printSection("Ready to Scope", refined);
+    printSection("Tasked", scoped);
   } else {
-    filtered.forEach((i) => {
-      console.log(`  [${i.status}] ${i.id} — ${i.title}`);
-      if (i.summary) console.log(`    ${i.summary}`);
-    });
+    for (const i of filtered) {
+      console.log(fmt(i));
+      if (i.summary || i.title) {
+        console.log(`    ${i.summary || i.title}`);
+      }
+      console.log();
+    }
   }
 }
+
+const ACTIVE_STATUSES: IdeaStatus[] = ["raw", "refined", "scoped"];
 
 async function cmdList(args: string[]): Promise<void> {
   const root = projectRoot();
@@ -255,28 +277,26 @@ async function cmdList(args: string[]): Promise<void> {
   }
 
   const filterStatus = parseFlag(args, "--status") as IdeaStatus | undefined;
-  const filtered = filterStatus
-    ? ideas.filter((i) => i.status === filterStatus)
-    : ideas;
+  const showAll = hasFlag(args, "--all");
+
+  let filtered: IdeaEntry[];
+  if (filterStatus) {
+    filtered = ideas.filter((i) => i.status === filterStatus);
+  } else if (showAll) {
+    filtered = ideas;
+  } else {
+    filtered = ideas.filter((i) => ACTIVE_STATUSES.includes(i.status));
+  }
 
   if (hasFlag(args, "--json")) {
     console.log(JSON.stringify(filtered, null, 2));
     return;
   }
 
-  const statusIcon: Record<IdeaStatus, string> = {
-    raw: "○",
-    refined: "◑",
-    scoped: "◕",
-    implemented: "●",
-    abandoned: "✕",
-    deferred: "⏸",
-  };
-
-  filtered.forEach((i) => {
-    const icon = statusIcon[i.status] ?? "?";
-    console.log(`${icon} ${i.id} — ${i.title}`);
-  });
+  for (const i of filtered) {
+    const icon = IDEA_STATUS_ICON[i.status] ?? "?";
+    console.log(`${icon} ${i.id}`);
+  }
 }
 
 async function cmdShow(args: string[]): Promise<void> {

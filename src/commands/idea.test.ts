@@ -227,7 +227,7 @@ test("status: exits on invalid status value", async () => {
 
 // ── list ──────────────────────────────────────────────────────────────────────
 
-test("list: outputs icon + id + title", async () => {
+test("list: outputs icon + id only (no title)", async () => {
   await runIdea(["add", "--title", "My Idea"]);
 
   const out = captureOutput();
@@ -236,8 +236,9 @@ test("list: outputs icon + id + title", async () => {
   } finally {
     out.restore();
   }
-  expect(out.lines().join("\n")).toContain("my-idea");
-  expect(out.lines().join("\n")).toContain("My Idea");
+  const output = out.lines().join("\n");
+  expect(output).toContain("my-idea");
+  expect(output).not.toContain("My Idea");
 });
 
 test("list --json: outputs full JSON array", async () => {
